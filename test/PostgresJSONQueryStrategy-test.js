@@ -51,9 +51,9 @@ describe("QueryStrategy.PostgresJSON", function() {
             var parameteredQuery = this.strategy.compose(criteriaObj);
             var statement = "SELECT * FROM data WHERE type = $1 AND (" +
                 "(metadata->$2->'value'->>0)::text = $3 AND " +
-                "(metadata->$5->'value'->>0)::text IN ($6) AND " +
-                "(metadata->$8->'value'->>0)::float >= $9 AND " + "(metadata->$8->'unit'->>0)::text = $10 AND " +
-                "(metadata->$11->'value'->>0)::integer > $12 AND " + "(metadata->$11->'unit'->>0)::text = $13" +
+                "(metadata->$4->'value'->>0)::text IN ($5) AND " +
+                "(metadata->$6->'value'->>0)::float >= $7 AND " + "(metadata->$6->'unit'->>0)::text = $8 AND " +
+                "(metadata->$9->'value'->>0)::integer > $10 AND " + "(metadata->$9->'unit'->>0)::text = $11" +
                 ");";
             var parameters = [ criteriaObj.pivotDataType.id, 
                 criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue, criteriaObj.content[0].fieldUnit,
