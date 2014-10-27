@@ -8,7 +8,7 @@ var PostgresJSONQueryStrategy = require('../lib/PostgresJSONQueryStrategy');
 describe("QueryStrategy.PostgresJSON", function() {
     
     var criteriaObj = {
-        pivotDataType: { id: 1, name: 'Star', schema: {} },
+        pivotDataType: 1,
         content: [
         {
             fieldName: "constellation",
@@ -55,9 +55,9 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "(metadata->$6->'value'->>0)::float >= $7 AND " + "(metadata->$6->'unit'->>0)::text = $8 AND " +
                 "(metadata->$9->'value'->>0)::integer > $10 AND " + "(metadata->$9->'unit'->>0)::text = $11" +
                 ");";
-            var parameters = [ criteriaObj.pivotDataType.id, 
-                criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue, criteriaObj.content[0].fieldUnit,
-                criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue, criteriaObj.content[1].fieldUnit, 
+            var parameters = [ criteriaObj.pivotDataType, 
+                criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue,
+                criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue, 
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, criteriaObj.content[2].fieldUnit,
                 criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, criteriaObj.content[3].fieldUnit ];
             expect(parameteredQuery).to.have.property('statement');
