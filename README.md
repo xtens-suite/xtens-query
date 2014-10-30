@@ -1,4 +1,4 @@
 xtens-query
 ===========
 
-A query module fro the XTENS repository
+A query module for the XTENS repository
