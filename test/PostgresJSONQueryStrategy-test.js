@@ -65,7 +65,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             "fieldName":"companion name",
             "fieldType":"text",
             "isList":false,
-            "comparator":"=",
+            "comparator":"LIKE",
             "fieldValue":"Saturn"
         }]
     };
@@ -132,30 +132,36 @@ describe("QueryStrategy.PostgresJSON", function() {
             for (j=1; j<5; j++) {
                 for (var i=0; i<20; i=i+2){
                     var loopQuery = this.strategy.composeLoopStatement(loopParamsObj, i, j);
-                    var commonTableExpr = ["WITH loop_instances_"+j+" AS (",
+                    var commonTableExpr = ["loop_instances_"+j+" AS (",
                         "SELECT * FROM (", 
-                        "SELECT id, row_number() OVER () AS rid, list_1.value::text AS companion_radius, list_1.unit::text AS companion_radius_unit FROM ",
+                        "SELECT id, row_number() OVER () AS rid, list_1.value::text AS attribute_1_value, list_1.unit::text AS attribute_1_unit FROM ",
                         "(SELECT id, json_array_elements(metadata->$"+(i+1)+"->'value') AS value, ",
                         "json_array_elements(metadata->$"+(i+1)+"->'unit') AS unit FROM data) AS list_1 ",
                         ") AS field_1 ", 
                         "LEFT JOIN (",
-                        "SELECT row_number() OVER () AS rid, list_2.value::text AS companion_distance, list_2.unit::text AS companion_distance_unit FROM ",
+                        "SELECT row_number() OVER () AS rid, list_2.value::text AS attribute_2_value, list_2.unit::text AS attribute_2_unit FROM ",
                         "(SELECT id, json_array_elements(metadata->$"+(i+4)+"->'value') AS value, ",
                         "json_array_elements(metadata->$"+(i+4)+"->'unit') AS unit FROM data) AS list_2 ",
                         ") AS field_2 ",
                         "ON field_1.rid = field_2.rid ",
                         "LEFT JOIN (",
-                        "SELECT row_number() OVER () AS rid, list_3.value::text AS companion_name, list_3.unit::text AS companion_name_unit FROM ",
+                        "SELECT row_number() OVER () AS rid, list_3.value::text AS attribute_3_value, list_3.unit::text AS attribute_3_unit FROM ",
                         "(SELECT id, json_array_elements(metadata->$"+(i+7)+"->'value') AS value, ",
                         "json_array_elements(metadata->$"+(i+7)+"->'unit') AS unit FROM data) AS list_3 ",
                         ") AS field_3 ",
                         "ON field_1.rid = field_3.rid",
                         ")"].join("");
-                        var mainQuery = ["SELECT DISTINCT data.id FROM data ",
-                            "LEFT JOIN loop_instances_"+j+" ON loop_instances_"+j+".id = data.id ",
-                            "WHERE companion_radius::float >= $"+(i+2)+" AND companion_radius_unit LIKE $"+(i+3),
-                            " AND companion_distance::float > $"+(i+5)+" AND companion_distance_unit LIKE $"+(i+6) + " ", 
-                            "AND companion_name::text = $"+(i+8)+";"].join("");
+                    if (j === 1) {
+                        commonTableExpr = "WITH " + commonTableExpr;
+                    }
+                    else {
+                        commonTableExpr = ", " + commonTableExpr;
+                    }
+                        var mainQuery = ["SELECT DISTINCT d_"+j+".id FROM data d_"+j,
+                            " LEFT JOIN loop_instances_"+j+" ON loop_instances_"+j+".id = d_"+j+".id ",
+                            "WHERE attribute_1_value::float >= $"+(i+2)+" AND attribute_1_unit LIKE $"+(i+3),
+                            " AND attribute_2_value::float > $"+(i+5)+" AND attribute_2_unit LIKE $"+(i+6) + " ", 
+                            "AND attribute_3_value::text LIKE $"+(i+8)+";"].join("");
                             expect(loopQuery).to.have.property('commonTableExpr');
                             expect(loopQuery).to.have.property('mainQuery');
                             expect(loopQuery.commonTableExpr).to.equal(commonTableExpr);
@@ -193,35 +199,36 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from a criteria object containing both nonrecursive fields and loops", function() {
             var parameteredQuery = this.strategy.compose(mixedParamsObj);
-            var statement = ["WITH loop_instances_1 AS ( SELECT * FROM (",
-                "SELECT id, row_number() OVER () AS rid, list_1.value::text AS designation, ",
-                "list_1.unit::text AS designation_unit FROM (",
+            // TODO: substitute attribute underscored names in the expected query
+            var statement = ["WITH loop_instances_1 AS (",
+                "SELECT * FROM (",
+                "SELECT id, row_number() OVER () AS rid, list_1.value::text AS designation, list_1.unit::text AS designation_unit FROM (",
                 "SELECT id, json_array_elements(metadata->$7->'value') AS value, json_array_elements(metadata->$7->'unit') AS unit FROM data",
-                ") AS list_1) AS field_1, ",
-                "loop_instances_2 AS (",
-                "SELECT * FROM (", 
-                "SELECT id, row_number() OVER () AS rid, list_1.value::text AS companion_radius, list_1.unit::text AS companion_radius_unit FROM ",
-                "(SELECT id, json_array_elements(metadata->$9->'value') AS value, ",
-                "json_array_elements(metadata->$9->'unit') AS unit FROM data) AS list_1 ",
-                ") AS field_1 ", 
-                "LEFT JOIN (",
-                "SELECT row_number() OVER () AS rid, list_2.value::text AS companion_distance, list_2.unit::text AS companion_distance_unit FROM ",
-                "(SELECT id, json_array_elements(metadata->$12->'value') AS value, ",
-                "json_array_elements(metadata->$12+->'unit') AS unit FROM data) AS list_2 ",
-                ") AS field_2 ",
-                "ON field_1.rid = field_2.rid)",
-                " SELECT * FROM data ", 
-                "INNER JOIN (SELECT DISTINCT data.id FROM data ",
-                "WHERE designation::text LIKE $8",
-                ") AS loop_data_1 ON loop_data_1.id = id ",
-                "INNER JOIN (SELECT DISTINCT data.id FROM data ",
-                "WHERE companion_radius::float <= $10 AND companion_radius_unit LIKE $11 ",
-                "AND companion_radius::float <= $13 AND companion_radius_unit LIKE $14",
-                ") AS loop_data_2 ON loop_data_2.id = id ",
-                "WHERE type = $1 AND (",
-                "(metadata->$2->'value'->>0)::text IN ($3) AND ", // Stellar Type
-                "(metadata->$4->'value'->>0)::float >= $5 AND (metadata->$4->'unit'->>0)::text = $6;", // Stellar Radius
+                ") AS list_1",
+                ") AS field_1",
+                "), loop_instances_2 AS (",
+                "SELECT * FROM (",
+                "SELECT id, row_number() OVER () AS rid, list_1.value::text AS companion_radius, list_1.unit::text AS companion_radius_unit FROM (",
+                "SELECT id, json_array_elements(metadata->$9->'value') AS value, json_array_elements(metadata->$9->'unit') AS unit FROM data",
+                " ) AS list_1",
+                ") AS field_1 LEFT JOIN (",
+                "SELECT row_number() OVER () AS rid, list_2.value::text AS companion_distance, list_2.unit::text AS companion_distance_unit FROM (",
+                "SELECT id, json_array_elements(metadata->$12->'value') AS value, json_array_elements(metadata->$12->'unit') AS unit FROM data",
+                " ) AS list_2 ) AS field_2 ON field_1.rid = field_2.rid",
+                ")",
+                "SELECT * FROM data d ",
+                "INNER JOIN (",
+                "SELECT DISTINCT d_1.id FROM data d_1 LEFT JOIN loop_instances_1 ON loop_instances_1.id = d_1.id  WHERE designation::text LIKE $8",
+                ") AS loop_data_1 ON loop_data_1.id = d.id ",
+                "INNER JOIN (",
+                "SELECT DISTINCT d_2.id FROM data d_2 LEFT JOIN loop_instances_2 ON loop_instances_2.id = d_2.id ",
+                "WHERE companion_radius::float <= $10 AND companion_radius_unit LIKE $11 AND companion_distance::float <= $13",
+                " AND companion_distance_unit LIKE $14",
+                ") AS loop_data_2 ON loop_data_2.id = d.id ",
+                "WHERE type = $1 AND (metadata->$2->'value'->>0)::text IN ($3)",
+                " AND (metadata->$4->'value'->>0)::float >= $5 AND (metadata->$4->'unit'->>0)::text LIKE $6;"    
             ].join("");
+
             expect(parameteredQuery).to.have.property('statement');
             expect(parameteredQuery).to.have.property('parameters');
             expect(parameteredQuery.statement).to.equal(statement);
