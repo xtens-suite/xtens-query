@@ -91,7 +91,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "fieldName":"designation",
                 "fieldType":"text",
                 "isList":false,
-                "comparator":"=",
+                "comparator":"LIKE",
                 "fieldValue":"UY Sct"
             }]
         },{
@@ -134,22 +134,22 @@ describe("QueryStrategy.PostgresJSON", function() {
                     var loopQuery = this.strategy.composeLoopStatement(loopParamsObj, i, j);
                     var commonTableExpr = ["loop_instances_"+j+" AS (",
                         "SELECT * FROM (", 
-                        "SELECT id, row_number() OVER () AS rid, list_1.value::text AS attribute_1_value, list_1.unit::text AS attribute_1_unit FROM ",
+                        "SELECT id, row_number() OVER () AS rid, list_0.value::text AS attribute_0_value, list_0.unit::text AS attribute_0_unit FROM ",
                         "(SELECT id, json_array_elements(metadata->$"+(i+1)+"->'value') AS value, ",
-                        "json_array_elements(metadata->$"+(i+1)+"->'unit') AS unit FROM data) AS list_1 ",
-                        ") AS field_1 ", 
+                        "json_array_elements(metadata->$"+(i+1)+"->'unit') AS unit FROM data) AS list_0",
+                        ") AS field_0 ", 
+                        "LEFT JOIN (",
+                        "SELECT row_number() OVER () AS rid, list_1.value::text AS attribute_1_value, list_1.unit::text AS attribute_1_unit FROM ",
+                        "(SELECT id, json_array_elements(metadata->$"+(i+4)+"->'value') AS value, ",
+                        "json_array_elements(metadata->$"+(i+4)+"->'unit') AS unit FROM data) AS list_1",
+                        ") AS field_1 ",
+                        "ON field_0.rid = field_1.rid ",
                         "LEFT JOIN (",
                         "SELECT row_number() OVER () AS rid, list_2.value::text AS attribute_2_value, list_2.unit::text AS attribute_2_unit FROM ",
-                        "(SELECT id, json_array_elements(metadata->$"+(i+4)+"->'value') AS value, ",
-                        "json_array_elements(metadata->$"+(i+4)+"->'unit') AS unit FROM data) AS list_2 ",
-                        ") AS field_2 ",
-                        "ON field_1.rid = field_2.rid ",
-                        "LEFT JOIN (",
-                        "SELECT row_number() OVER () AS rid, list_3.value::text AS attribute_3_value, list_3.unit::text AS attribute_3_unit FROM ",
                         "(SELECT id, json_array_elements(metadata->$"+(i+7)+"->'value') AS value, ",
-                        "json_array_elements(metadata->$"+(i+7)+"->'unit') AS unit FROM data) AS list_3 ",
-                        ") AS field_3 ",
-                        "ON field_1.rid = field_3.rid",
+                        "json_array_elements(metadata->$"+(i+7)+"->'unit') AS unit FROM data) AS list_2",
+                        ") AS field_2 ",
+                        "ON field_0.rid = field_2.rid",
                         ")"].join("");
                     if (j === 1) {
                         commonTableExpr = "WITH " + commonTableExpr;
@@ -157,12 +157,13 @@ describe("QueryStrategy.PostgresJSON", function() {
                     else {
                         commonTableExpr = ", " + commonTableExpr;
                     }
-                        var mainQuery = ["SELECT DISTINCT d_"+j+".id FROM data d_"+j,
+                        var mainQuery = ["(SELECT DISTINCT d_"+j+".id FROM data d_"+j,
                             " LEFT JOIN loop_instances_"+j+" ON loop_instances_"+j+".id = d_"+j+".id ",
-                            "WHERE attribute_1_value::float >= $"+(i+2)+" AND attribute_1_unit LIKE $"+(i+3),
-                            " AND attribute_2_value::float > $"+(i+5)+" AND attribute_2_unit LIKE $"+(i+6) + " ", 
-                            "AND attribute_3_value::text LIKE $"+(i+8)+";"].join("");
-                            expect(loopQuery).to.have.property('commonTableExpr');
+                            "WHERE attribute_0_value::float >= $"+(i+2)+" AND attribute_0_unit LIKE $"+(i+3),
+                            " AND attribute_1_value::float > $"+(i+5)+" AND attribute_1_unit LIKE $"+(i+6) + " ", 
+                            "AND attribute_2_value::text LIKE $"+(i+8)+")",
+                        " AS loop_data_"+j+" ON loop_data_"+j+".id = d.id"].join("");
+                        expect(loopQuery).to.have.property('commonTableExpr');
                             expect(loopQuery).to.have.property('mainQuery');
                             expect(loopQuery.commonTableExpr).to.equal(commonTableExpr);
                             expect(loopQuery.mainQuery).to.equal(mainQuery);
@@ -180,12 +181,12 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from a criteria object containing only nonrecursive fields", function() {
             var parameteredQuery = this.strategy.compose(criteriaObj);
-            var statement = "SELECT * FROM data WHERE type = $1 AND (" +
+            var statement = "SELECT * FROM data d WHERE type = $1 AND " +
                 "(metadata->$2->'value'->>0)::text = $3 AND " +
                 "(metadata->$4->'value'->>0)::text IN ($5) AND " +
-                "(metadata->$6->'value'->>0)::float >= $7 AND " + "(metadata->$6->'unit'->>0)::text = $8 AND " +
-                "(metadata->$9->'value'->>0)::integer > $10 AND " + "(metadata->$9->'unit'->>0)::text = $11" +
-                ");";
+                "(metadata->$6->'value'->>0)::float >= $7 AND " + "(metadata->$6->'unit'->>0)::text LIKE $8 AND " +
+                "(metadata->$9->'value'->>0)::integer > $10 AND " + "(metadata->$9->'unit'->>0)::text LIKE $11" +
+                ";";
             var parameters = [ criteriaObj.pivotDataType, 
                 criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue,
                 criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue, 
@@ -202,33 +203,34 @@ describe("QueryStrategy.PostgresJSON", function() {
             // TODO: substitute attribute underscored names in the expected query
             var statement = ["WITH loop_instances_1 AS (",
                 "SELECT * FROM (",
-                "SELECT id, row_number() OVER () AS rid, list_1.value::text AS designation, list_1.unit::text AS designation_unit FROM (",
+                "SELECT id, row_number() OVER () AS rid, list_0.value::text AS attribute_0_value, list_0.unit::text AS attribute_0_unit FROM (",
                 "SELECT id, json_array_elements(metadata->$7->'value') AS value, json_array_elements(metadata->$7->'unit') AS unit FROM data",
-                ") AS list_1",
-                ") AS field_1",
+                ") AS list_0",
+                ") AS field_0",
                 "), loop_instances_2 AS (",
                 "SELECT * FROM (",
-                "SELECT id, row_number() OVER () AS rid, list_1.value::text AS companion_radius, list_1.unit::text AS companion_radius_unit FROM (",
+                "SELECT id, row_number() OVER () AS rid, list_0.value::text AS attribute_0_value, list_0.unit::text AS attribute_0_unit FROM (",
                 "SELECT id, json_array_elements(metadata->$9->'value') AS value, json_array_elements(metadata->$9->'unit') AS unit FROM data",
-                " ) AS list_1",
-                ") AS field_1 LEFT JOIN (",
-                "SELECT row_number() OVER () AS rid, list_2.value::text AS companion_distance, list_2.unit::text AS companion_distance_unit FROM (",
+                ") AS list_0",
+                ") AS field_0 LEFT JOIN (",
+                "SELECT row_number() OVER () AS rid, list_1.value::text AS attribute_1_value, list_1.unit::text AS attribute_1_unit FROM (",
                 "SELECT id, json_array_elements(metadata->$12->'value') AS value, json_array_elements(metadata->$12->'unit') AS unit FROM data",
-                " ) AS list_2 ) AS field_2 ON field_1.rid = field_2.rid",
-                ")",
+                ") AS list_1) AS field_1 ON field_0.rid = field_1.rid",
+                ") ",
                 "SELECT * FROM data d ",
                 "INNER JOIN (",
-                "SELECT DISTINCT d_1.id FROM data d_1 LEFT JOIN loop_instances_1 ON loop_instances_1.id = d_1.id  WHERE designation::text LIKE $8",
+                "SELECT DISTINCT d_1.id FROM data d_1 LEFT JOIN loop_instances_1 ON loop_instances_1.id = d_1.id WHERE attribute_0_value::text LIKE $8",
                 ") AS loop_data_1 ON loop_data_1.id = d.id ",
                 "INNER JOIN (",
                 "SELECT DISTINCT d_2.id FROM data d_2 LEFT JOIN loop_instances_2 ON loop_instances_2.id = d_2.id ",
-                "WHERE companion_radius::float <= $10 AND companion_radius_unit LIKE $11 AND companion_distance::float <= $13",
-                " AND companion_distance_unit LIKE $14",
+                "WHERE attribute_0_value::float <= $10 AND attribute_0_unit LIKE $11 AND attribute_1_value::float > $13",
+                " AND attribute_1_unit LIKE $14",
                 ") AS loop_data_2 ON loop_data_2.id = d.id ",
                 "WHERE type = $1 AND (metadata->$2->'value'->>0)::text IN ($3)",
                 " AND (metadata->$4->'value'->>0)::float >= $5 AND (metadata->$4->'unit'->>0)::text LIKE $6;"    
             ].join("");
-
+            parameters = [5, 'Type', 'hypergiant,supergiant', 'Radius', '1000', 'R☉', 'designation', '\"UY Sct\"', 'companion radius', '50000', '\"km\"',
+            'companion distance', '50', '\"AU\"'];
             expect(parameteredQuery).to.have.property('statement');
             expect(parameteredQuery).to.have.property('parameters');
             expect(parameteredQuery.statement).to.equal(statement);
