@@ -121,6 +121,71 @@ describe("QueryStrategy.PostgresJSON", function() {
             }]
         }]
     };
+    
+    var nestedParamsObj = {
+        "pivotDataType":1,
+        "content":[{
+            "fieldName":"Diagnosis Age",
+            "fieldType":"integer",
+            "isList":false,
+            "comparator":"<=",
+            "fieldValue":"365",
+            "fieldUnit":"days"
+        },{
+            "fieldName":"Overall Status",
+            "fieldType":"text",
+            "isList":true,
+            "comparator":"IN",
+            "fieldValue":"Diseased"
+        },{
+            "pivotDataType":2,
+            "content":[{
+                "fieldName":"Diagnosis",
+                "fieldType":"text",
+                "isList":true,
+                "comparator":"IN",
+                "fieldValue":"Neuroblastoma"
+            },{
+                "pivotDataType":6,
+                "content":[{
+                    "fieldName":"quantity",
+                    "fieldType":"float",
+                    "isList":false,
+                    "comparator":">=",
+                    "fieldValue":"1.0",
+                    "fieldUnit":"μl"
+                },{
+                    "pivotDataType":3,
+                    "content":[{
+                        "fieldName":"Overall Result",
+                        "fieldType":"text",
+                        "isList":true,
+                        "comparator":"IN",
+                        "fieldValue":"SCA"
+                    }]
+                }]
+            },{
+                "pivotDataType":7,
+                "content":[{
+                    "fieldName":"quantity",
+                    "fieldType":"float",
+                    "isList":false,
+                    "comparator":">=",
+                    "fieldValue":"1.2",
+                    "fieldUnit":"µg"
+                },{
+                    "pivotDataType":8,
+                    "content":[{
+                        "fieldName":"hypoxia signature",
+                        "fieldType":"text",
+                        "isList":true,
+                        "comparator":"IN",
+                        "fieldValue":"high"
+                    }]
+                }]
+            }]
+        }]
+    };
 
     before(function() {
         this.strategy = new PostgresJSONQueryStrategy();
@@ -236,7 +301,8 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(parameteredQuery.statement).to.equal(statement);
             expect(parameteredQuery.parameters).to.eql(parameters);
         });
-
     });
+
+    describe()
 
 });
