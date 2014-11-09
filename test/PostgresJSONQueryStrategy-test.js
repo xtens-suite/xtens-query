@@ -41,7 +41,7 @@ describe("QueryStrategy.PostgresJSON", function() {
         ]
     };
 
-   
+
     var nestedParamsObj = {
         "pivotDataType":1,
         "classTemplate": "Subject",
@@ -57,7 +57,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             "fieldType":"text",
             "isList":true,
             "comparator":"IN",
-            "fieldValue":"Diseased"
+            "fieldValue":["Diseased"]
         },{
             "pivotDataType":2,
             "classTemplate":"Sample",
@@ -66,7 +66,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "fieldType":"text",
                 "isList":true,
                 "comparator":"IN",
-                "fieldValue":"Neuroblastoma"
+                "fieldValue":["Neuroblastoma"]
             },{
                 "pivotDataType":6,
                 "classTemplate":"Sample",
@@ -85,7 +85,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                         "fieldType":"text",
                         "isList":true,
                         "comparator":"IN",
-                        "fieldValue":"SCA"
+                        "fieldValue":["SCA","NCA"]
                     }]
                 }]
             },{
@@ -106,7 +106,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                         "fieldType":"text",
                         "isList":true,
                         "comparator":"IN",
-                        "fieldValue":"high"
+                        "fieldValue":["high"]
                     }]
                 }]
             }]
@@ -133,28 +133,86 @@ describe("QueryStrategy.PostgresJSON", function() {
                 criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue[0], 
                 criteriaObj.content[1].fieldValue[1], criteriaObj.content[1].fieldValue[2], 
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, criteriaObj.content[2].fieldUnit,
-                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, criteriaObj.content[3].fieldUnit ];
-                expect(parameteredQuery).to.have.property('statement');
-                expect(parameteredQuery).to.have.property('parameters');
-                expect(parameteredQuery).to.have.property('lastPosition');
-                expect(parameteredQuery.statement).to.equal(statement);
-                expect(parameteredQuery.parameters).to.eql(parameters);
-                expect(parameteredQuery.lastPosition).to.equal(13);
-        });
-
-        it("composes a query from a criteria object containing only nonrecursive fields", function() {
-            var parameteredQuery = this.strategy.composeSingle(nestedParamsObj);
-            console.log(parameteredQuery);
+                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, criteriaObj.content[3].fieldUnit 
+            ];
             expect(parameteredQuery).to.have.property('statement');
             expect(parameteredQuery).to.have.property('parameters');
             expect(parameteredQuery).to.have.property('lastPosition');
+            expect(parameteredQuery.statement).to.equal(statement);
+            expect(parameteredQuery.parameters).to.eql(parameters);
+            expect(parameteredQuery.lastPosition).to.equal(13);
         });
 
-    
+        it("composes a set of queries from a nested criteria object", function() {
+            var commonTableExpressions = [
+                "SELECT * FROM sample WHERE type = $7 AND (metadata->$8->'value'->>0)::text IN ($9)",
+                "SELECT * FROM sample WHERE type = $10 AND (metadata->$11->'value'->>0)::float >= $12 AND (metadata->$11->'unit'->>0)::text LIKE $13",
+                "SELECT * FROM sample WHERE TYPE = $14 AND (metadata->$15->'value'->>0)::float >= $16 AND (metadata->$15->'unit'->>0)::text LIKE $17",
+                "SELECT * FROM data WHERE type = $18 AND (metadata->$19->'value'->>0)::text IN ($20,$21)",
+                "SELECT * FROM data WHERE type =$22 AND (metadata->$23->'value'->>0)::text IN ($24)"
+            ];
+            var statement = "SELECT * FROM subject d WHERE type = $1 AND (metadata->$2->'value'->>0)::integer <= $3 "; 
+            statement += "AND (metadata->$2->'unit'->>0)::text LIKE $4 AND (metadata->$5->'value'->>0)::text IN ($6);";
+            var parameters = [ nestedParamsObj.pivotDataType,
+                nestedParamsObj.content[0].fieldName, nestedParamsObj.content[0].fieldValue, nestedParamsObj.content[0].fieldUnit, // Subject
+                nestedParamsObj.content[1].fieldName, nestedParamsObj.content[1].fieldValue,
+                nestedParamsObj.content[2].pivotDataType, nestedParamsObj.content[2].content[0].fieldName, //Tissue
+                nestedParamsObj.content[2].content[0].fieldValue, 
+                nestedParamsObj.content[2].content[1].pivotDataType, nestedParamsObj.content[2].content[1].content[0].fieldName, // DNA Sample
+                nestedParamsObj.content[2].content[1].content[0].fieldValue, nestedParamsObj.content[2].content[1].content[0].fieldUnit,
+                nestedParamsObj.content[2].content[2].pivotDataType, nestedParamsObj.content[2].content[2].content[0].fieldName, // RNA Sample
+                nestedParamsObj.content[2].content[2].content[0].fieldValue, nestedParamsObj.content[2].content[2].content[0].fieldUnit,
+                nestedParamsObj.content[2].content[1].content[1].pivotDataType, // CGH
+                nestedParamsObj.content[2].content[1].content[1].content[0].fieldName,
+                nestedParamsObj.content[2].content[1].content[1].content[0].fieldValue[0], 
+                nestedParamsObj.content[2].content[1].content[1].content[0].fieldValue[1],
+                nestedParamsObj.content[2].content[2].content[1].pivotDataType, // Microarray
+                nestedParamsObj.content[2].content[2].content[1].content[0].fieldName,
+                nestedParamsObj.content[2].content[2].content[1].content[0].fieldValue[0], 
+                nestedParamsObj.content[2].content[2].content[1].content[0].fieldValue[1]
+            ];
+            console.log(parameters);
+            console.log(parameters.length);
+            debugger;
+            var nestedParameteredQuery = this.strategy.composeSingle(nestedParamsObj);
+            expect(nestedParameteredQuery.statement).to.equal(statement);
+            expect(nestedParameteredQuery.commonTableExpressions).to.eql(commonTableExpressions);
+            expect(nestedParameteredQuery.parameters).to.eql(parameters);
+            expect(nestedParameteredQuery.lastPosition).to.equal(parameters.length);
+        });
     });
 
     describe("#compose", function() {
-    
+        it("composes a query from a nested criteria object (containing only nonrecursive fields)", function() {
+            var parameteredQuery = this.strategy.compose(nestedParamsObj);
+            var commonTableExpr = [
+                "WITH nested_1 AS (SELECT * FROM sample WHERE type = $7 AND (metadata->$8->'value'->>0)::text IN ($9)), ",
+                "nested_2 AS (SELECT * FROM sample WHERE type = $10 ",
+                "AND (metadata->$11->'value'->>0)::float >= $12 AND (metadata->$11->'unit'->>0)::text LIKE $13), ",
+                "nested_3 AS (SELECT * FROM sample WHERE TYPE = $14 ",
+                "AND (metadata->$15->'value'->>0)::float >= $16 AND (metadata->$15->'unit'->>0)::text LIKE $17), ",
+                "nested_4 AS (SELECT * FROM data WHERE type = $18 AND  (metadata->$19->'value'->>0)::text IN ($20,$21)), ",
+                "nested_5 AS (SELECT * FROM data WHERE type =$22 AND (metadata->$23->'value'->>0)::text IN ($24))"
+            ].join("");
+            var mainQuery = [
+                "SELECT DISTINCT d.id, d.code FROM subject d ",
+                "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
+                "INNER JOIN nested_2 ON nested_2.parent_sample = nested_1.id ",
+                "INNER JOIN nested_3 ON nested_3.parent_sample = nested_1.id ",
+                "INNER JOIN nested_4 ON nested_4.parent_sample = nested_2.id ",
+                "INNER JOIN nested_5 ON nested_5.parent_sample = nested_3.id ",
+                "WHERE d.type = $1 ",
+                "AND (d.metadata->$2->'value'->>0)::integer <= $3 AND (d.metadata->$2->'unit'->>0)::text LIKE $4 ",
+                "AND (d.metadata->$5->'value'->>0)::text IN ($6);"
+            ].join();
+            /* TODO
+            console.log(commonTableExpr);
+            console.log(mainQuery);
+            console.log(parameteredQuery);
+            expect(parameteredQuery).to.have.property('statement');
+            expect(parameteredQuery).to.have.property('parameters');
+            expect(parameteredQuery).to.have.property('lastPosition'); */
+        });
     });
-  
+
 });
