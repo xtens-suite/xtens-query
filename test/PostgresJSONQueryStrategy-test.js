@@ -123,12 +123,12 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from a criteria object containing only nonrecursive fields", function() {
             var parameteredQuery = this.strategy.composeSingle(criteriaObj);
-            var statement = "SELECT * FROM data d WHERE type = $1 AND " +
-                "(metadata->$2->'value'->>0)::text = $3 AND " +
-                "(metadata->$4->'value'->>0)::text IN ($5,$6,$7) AND " +
-                "(metadata->$8->'value'->>0)::float >= $9 AND " + "(metadata->$8->'unit'->>0)::text LIKE $10 AND " +
-                "(metadata->$11->'value'->>0)::integer > $12 AND " + "(metadata->$11->'unit'->>0)::text LIKE $13" +
-                ";";
+            var selectStatement = "SELECT * FROM data d";
+            var whereClause = "WHERE d.type = $1 AND " +
+                "(d.metadata->$2->'value'->>0)::text = $3 AND " +
+                "(d.metadata->$4->'value'->>0)::text IN ($5,$6,$7) AND " +
+                "(d.metadata->$8->'value'->>0)::float >= $9 AND " + "(d.metadata->$8->'unit'->>0)::text LIKE $10 AND " +
+                "(d.metadata->$11->'value'->>0)::integer > $12 AND " + "(d.metadata->$11->'unit'->>0)::text LIKE $13";
             var parameters = [ criteriaObj.pivotDataType, 
                 criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue,
                 criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue[0], 
@@ -136,12 +136,16 @@ describe("QueryStrategy.PostgresJSON", function() {
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, criteriaObj.content[2].fieldUnit,
                 criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, criteriaObj.content[3].fieldUnit 
             ];
-            expect(parameteredQuery).to.have.property('statement');
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            /*
             expect(parameteredQuery).to.have.property('parameters');
-            expect(parameteredQuery).to.have.property('lastPosition');
-            expect(parameteredQuery.statement).to.equal(statement);
-            expect(parameteredQuery.parameters).to.eql(parameters);
-            expect(parameteredQuery.lastPosition).to.equal(13);
+            expect(parameteredQuery).to.have.property('lastPosition'); */
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+            expect(parameteredQuery.previousOutput.lastPosition).to.equal(13);
         });
 
         it("composes a set of queries from a nested criteria object", function() {
@@ -152,8 +156,9 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "SELECT * FROM sample WHERE type = $18 AND (metadata->$19->'value'->>0)::float >= $20 AND (metadata->$19->'unit'->>0)::text LIKE $21",
                 "SELECT * FROM sample WHERE type = $7 AND (metadata->$8->'value'->>0)::text IN ($9)"
             ];
-            var statement = "SELECT * FROM subject d WHERE type = $1 AND (metadata->$2->'value'->>0)::integer <= $3 "; 
-            statement += "AND (metadata->$2->'unit'->>0)::text LIKE $4 AND (metadata->$5->'value'->>0)::text IN ($6);";
+            var selectStatement = "SELECT * FROM subject d"; 
+            var whereClause = "WHERE d.type = $1 AND (d.metadata->$2->'value'->>0)::integer <= $3 "; 
+            whereClause += "AND (d.metadata->$2->'unit'->>0)::text LIKE $4 AND (d.metadata->$5->'value'->>0)::text IN ($6)";
             var parameters = [ nestedParamsObj.pivotDataType,
                 nestedParamsObj.content[0].fieldName, nestedParamsObj.content[0].fieldValue, nestedParamsObj.content[0].fieldUnit, // Subject
                 nestedParamsObj.content[1].fieldName, nestedParamsObj.content[1].fieldValue[0],
@@ -173,19 +178,20 @@ describe("QueryStrategy.PostgresJSON", function() {
             ];
             console.log(parameters);
             console.log(parameters.length);
-            debugger;
             var nestedParameteredQuery = this.strategy.composeSingle(nestedParamsObj);
+            var res = this.strategy.composeCommonTableExpression(nestedParameteredQuery);
             console.log(nestedParameteredQuery.parameters);
-            expect(nestedParameteredQuery.statement).to.equal(statement);
-            expect(_.pluck(nestedParameteredQuery.commonTableExpressions, 'statement')).to.eql(commonTableExpressions);
-            expect(nestedParameteredQuery.parameters).to.eql(parameters);
-            expect(nestedParameteredQuery.lastPosition).to.equal(parameters.length);
+            expect(nestedParameteredQuery.select).to.equal(selectStatement);
+            expect(nestedParameteredQuery.where).to.equal(whereClause);
+            // expect(_.pluck(nestedParameteredQuery.commonTableExpressions, 'statement')).to.eql(commonTableExpressions);
+            expect(nestedParameteredQuery.previousOutput.parameters).to.eql(parameters);
+            expect(nestedParameteredQuery.previousOutput.lastPosition).to.equal(parameters.length);
         });
     });
 
     describe("#compose", function() {
         it("composes a query from a nested criteria object (containing only nonrecursive fields)", function() {
-            var parameteredQuery = this.strategy.compose(nestedParamsObj);
+            var query = this.strategy.compose(nestedParamsObj);
             /*
             var commonTableExpr = [
                 "WITH nested_1 AS (SELECT * FROM data WHERE type = $14 AND (metadata->$15->'value'->>0)::text IN ($16,$17)), ",
@@ -212,22 +218,25 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "WITH nested_1 AS (SELECT * FROM sample WHERE type = $7 AND (metadata->$8->'value'->>0)::text IN ($9)), ",
                 "nested_2 AS (SELECT * FROM sample WHERE type = $10 ",
                 "AND (metadata->$11->'value'->>0)::float >= $12 AND (metadata->$11->'unit'->>0)::text LIKE $13), ",
-                "nested_3 AS (SELECT * FROM data WHERE type = $14 AND  (metadata->$15->'value'->>0)::text IN ($16,$17)), ",
-                "nested_4 AS (SELECT * FROM sample WHERE TYPE = $18 ",
+                "nested_3 AS (SELECT * FROM data WHERE type = $14 AND (metadata->$15->'value'->>0)::text IN ($16,$17)), ",
+                "nested_4 AS (SELECT * FROM sample WHERE type = $18 ",
                 "AND (metadata->$19->'value'->>0)::float >= $20 AND (metadata->$19->'unit'->>0)::text LIKE $21), ",
-                "nested_5 AS (SELECT * FROM data WHERE type =$22 AND (metadata->$23->'value'->>0)::text IN ($24))"
+                "nested_5 AS (SELECT * FROM data WHERE type = $22 AND (metadata->$23->'value'->>0)::text IN ($24))"
             ].join("");
             var mainQuery = [
-                "SELECT DISTINCT d.id, d.code FROM subject d ",
+                "SELECT DISTINCT d.id FROM subject d ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
                 "INNER JOIN nested_2 ON nested_2.parent_sample = nested_1.id ",
-                "INNER JOIN nested_3 ON nested_3.parent_sample = nested_1.id ",
-                "INNER JOIN nested_4 ON nested_4.parent_sample = nested_2.id ",
-                "INNER JOIN nested_5 ON nested_5.parent_sample = nested_3.id ",
+                "INNER JOIN nested_3 ON nested_3.parent_sample = nested_2.id ",
+                "INNER JOIN nested_4 ON nested_4.parent_sample = nested_1.id ",
+                "INNER JOIN nested_5 ON nested_5.parent_sample = nested_4.id ",
                 "WHERE d.type = $1 ",
                 "AND (d.metadata->$2->'value'->>0)::integer <= $3 AND (d.metadata->$2->'unit'->>0)::text LIKE $4 ",
                 "AND (d.metadata->$5->'value'->>0)::text IN ($6);"
-            ].join(); 
+            ].join("");
+            expect(query).to.have.property('statement');
+            expect(query).to.have.property('parameters');
+            expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
             /* TODO
                console.log(commonTableExpr);
                console.log(mainQuery);
