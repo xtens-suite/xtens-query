@@ -3,10 +3,19 @@
  * @description unit test 
  */
 var expect = require('chai').expect;
+var sinon = require('sinon');
 var _ = require("lodash");
 var PostgresJSONQueryStrategy = require('../lib/PostgresJSONQueryStrategy');
 
 describe("QueryStrategy.PostgresJSON", function() {
+
+    var criteriaRowWithSQLInjection = {
+        "fieldName":"Diagnosis",
+        "fieldType":"text",
+        "isList":true,
+        "comparator":">= 0; DROP table data;",
+        "fieldValue":["Neuroblastoma"]
+    };
 
     var criteriaObj = {
         pivotDataType: 1,
@@ -41,7 +50,6 @@ describe("QueryStrategy.PostgresJSON", function() {
         }
         ]
     };
-
 
     var nestedParamsObj = {
         "pivotDataType":1,
@@ -118,6 +126,14 @@ describe("QueryStrategy.PostgresJSON", function() {
         this.strategy = new PostgresJSONQueryStrategy();
     });
 
+    describe("#getSubqueryRow", function() {
+        it("#should throw an error if a comparator is not allowed (SQL injection)", function() {
+            expect(this.strategy.getSubqueryRow.bind(this.strategy.getSubqueryRow, criteriaRowWithSQLInjection)).to.throw(
+                "Operation not allowed. Trying to inject a forbidden comparator!!"
+            );
+        });
+    });
+
 
     describe("#composeSingle", function() {
 
@@ -140,8 +156,8 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(parameteredQuery).to.have.property('where');
             expect(parameteredQuery).to.have.property('previousOutput');
             /*
-            expect(parameteredQuery).to.have.property('parameters');
-            expect(parameteredQuery).to.have.property('lastPosition'); */
+               expect(parameteredQuery).to.have.property('parameters');
+               expect(parameteredQuery).to.have.property('lastPosition'); */
             expect(parameteredQuery.select).to.equal(selectStatement);
             expect(parameteredQuery.where).to.equal(whereClause);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
@@ -192,28 +208,7 @@ describe("QueryStrategy.PostgresJSON", function() {
     describe("#compose", function() {
         it("composes a query from a nested criteria object (containing only nonrecursive fields)", function() {
             var query = this.strategy.compose(nestedParamsObj);
-            /*
-            var commonTableExpr = [
-                "WITH nested_1 AS (SELECT * FROM data WHERE type = $14 AND (metadata->$15->'value'->>0)::text IN ($16,$17)), ",
-                "nested_2 AS (SELECT * FROM sample WHERE type = $10 AND (metadata->$11->'value'->>0)::float >= $12",
-                " AND (metadata->$11->'unit'->>0)::text LIKE $13), ",
-                "nested_3 AS (SELECT * FROM data WHERE type = $22 AND (metadata->$23->'value'->>0)::text IN ($24)), ",
-                "nested_4 AS (SELECT * FROM sample WHERE type = $18 AND (metadata->$19->'value'->>0)::float >= $20",
-                " AND (metadata->$19->'unit'->>0)::text LIKE $21), ",
-                "nested_5 AS (SELECT * FROM sample WHERE type = $7 AND (metadata->$8->'value'->>0)::text IN ($9))"
-            ].join("");
-            var mainQuery = [
-                "SELECT DISTINCT d.id, d.code FROM subject d ",
-                "INNER JOIN nested_5 ON nested_5.parent_subject = d.id ",
-                "INNER JOIN nested_2 ON nested_2.parent_sample = nested_5.id ",
-                "INNER JOIN nested_1 ON nested_1.parent_sample = nested_2.id ",
-                "INNER JOIN nested_4 ON nested_4.parent_sample = nested_5.id ",
-                "INNER JOIN nested_3 ON nested_3.parent_sample = nested_4.id ",
-                "WHERE d.type = $1 ",
-                "AND (d.metadata->$2->'value'->>0)::integer <= $3 AND (d.metadata->$2->'unit'->>0)::text LIKE $4 ",
-                "AND (d.metadata->$5->'value'->>0)::text IN ($6);"
-            ]; */
-            
+
             var commonTableExpr = [
                 "WITH nested_1 AS (SELECT * FROM sample WHERE type = $7 AND (metadata->$8->'value'->>0)::text IN ($9)), ",
                 "nested_2 AS (SELECT * FROM sample WHERE type = $10 ",
@@ -237,14 +232,16 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
-            /* TODO
-               console.log(commonTableExpr);
-               console.log(mainQuery);
-               console.log(parameteredQuery);
-               expect(parameteredQuery).to.have.property('statement');
-               expect(parameteredQuery).to.have.property('parameters');
-               expect(parameteredQuery).to.have.property('lastPosition'); */
         });
+        
+        /*
+        it("should throw an error if you are using an unallowed comparator", function() {
+            var spy = sinon.spy(this.strategy, 'compose');
+            var query = this.strategy.compose(nestedWithSQLInjection);
+            expect(spy).to.have.thrown();
+            this.strategy.compose.restore();
+
+        }); */
     });
 
 });
