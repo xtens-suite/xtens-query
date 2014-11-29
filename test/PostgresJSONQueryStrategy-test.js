@@ -122,6 +122,43 @@ describe("QueryStrategy.PostgresJSON", function() {
         }]
     };
 
+    var subjectParamsObj = {
+        "pivotDataType":1,
+        "classTemplate":"Subject",
+        "content":[
+            {
+            "specializedQuery":"Personal Details",
+            "surnameComparator":"LIKE",
+            "surname":"Pizzi",
+            "givenNameComparator":"NOT LIKE",
+            "givenName":"Pippo",
+            "birthDateComparator":"="
+        },{
+            "specializedQuery":"Subject",
+            "codeComparator":"LIKE",
+            "code":"PAT002",
+            "sexComparator":"IN",
+            "sex":["F","M"]
+        },{
+            "fieldName":"overall_status",
+            "fieldType":"text",
+            "isList":true,
+            "comparator":"IN",
+            "fieldValue":["Diseased","Deceased"]
+        },{
+            "pivotDataType":2,
+            "classTemplate":"Sample",
+            "content":[{
+                "fieldName":"Diagnosis",
+                "fieldType":"text",
+                "isList":true,
+                "comparator":"IN",
+                "fieldValue":["Neuroblastoma"]
+            }]
+        }
+        ]
+    }; 
+
     before(function() {
         this.strategy = new PostgresJSONQueryStrategy();
     });
@@ -134,6 +171,32 @@ describe("QueryStrategy.PostgresJSON", function() {
         });
     });
 
+    describe("#composeSpecializedPersonalDetailsQuery", function() {
+        it("composes a query from a criteria object containing specialized fields on subject and personal details", function() {
+            var pdProperties = subjectParamsObj.content[0];
+            var parameteredQuery = this.strategy.composeSpecializedPersonalDetailsQuery(pdProperties);
+            var selectStatement = "SELECT * FROM personal_details";
+            var whereClause = "WHERE surname "+pdProperties.surnameComparator+" $1 AND given_name "+pdProperties.givenNameComparator+" $2";
+            var parameters = [pdProperties.surname, pdProperties.givenName];
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+        });
+    });
+
+    describe("#composeSpecializedSubjectQuery", function() {
+        it("composes a query from a criteria object containing specialized fields on subject", function() {
+            var subjProperties = subjectParamsObj.content[1];
+            var parameteredQuery = this.strategy.composeSpecializedSubjectQuery(subjProperties);
+            var subquery = "d.code LIKE $1 AND d.sex IN ($2,$3)";
+            expect(parameteredQuery).to.have.property('subquery');
+            expect(parameteredQuery.subquery).to.equal(subquery);
+            // TODO add parameters check into the array
+        });
+    });
 
     describe("#composeSingle", function() {
 
@@ -162,6 +225,12 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(parameteredQuery.where).to.equal(whereClause);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
             expect(parameteredQuery.previousOutput.lastPosition).to.equal(13);
+        });
+
+        it("composes a query from a criteria object containing specialized fields on subject and personal details", function() {
+            var commonTableExpr = [
+                "SELECT * FROM personal_details pd WHERE pd.surname NOT LIKE "
+            ]; 
         });
 
         it("composes a set of queries from a nested criteria object", function() {
@@ -233,15 +302,34 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query).to.have.property('parameters');
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
         });
-        
-        /*
-        it("should throw an error if you are using an unallowed comparator", function() {
-            var spy = sinon.spy(this.strategy, 'compose');
-            var query = this.strategy.compose(nestedWithSQLInjection);
-            expect(spy).to.have.thrown();
-            this.strategy.compose.restore();
 
-        }); */
+        it("composes a query from a nested subject criteria object (containing personal info / specialized fields)", function() {
+            var query = this.strategy.compose(subjectParamsObj);
+
+            var commonTableExpr = [
+                "WITH pd AS (SELECT * FROM personal_details WHERE surname LIKE $2 AND given_name LIKE $3), ",
+                "nested_1 AS (SELECT * FROM sample WHERE type = $10 AND (((metadata->$11->'value'->>0)::text IN ($12))))"
+            ].join("");
+            var mainQuery = [
+                "SELECT DISTINCT d.id FROM subject d ",
+                "INNER JOIN pd ON pd. = d.id ",
+                "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
+                "WHERE d.type = $1",
+                "AND (d.code LIKE $4 AND d.sex IN ($5,$6) AND ((d.metadata->$7->'value'->>0)::text IN ($8, $9)));"
+            ].join("");
+            expect(query).to.have.property('statement');
+            expect(query).to.have.property('parameters');
+            expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
+        });
+
+        /*
+           it("should throw an error if you are using an unallowed comparator", function() {
+           var spy = sinon.spy(this.strategy, 'compose');
+           var query = this.strategy.compose(nestedWithSQLInjection);
+           expect(spy).to.have.thrown();
+           this.strategy.compose.restore();
+
+           }); */
     });
 
 });
