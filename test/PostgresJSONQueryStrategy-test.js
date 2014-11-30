@@ -5,6 +5,7 @@
 var expect = require('chai').expect;
 var sinon = require('sinon');
 var _ = require("lodash");
+var DataTypeClasses = require("../lib/Utils").DataTypeClasses;
 var PostgresJSONQueryStrategy = require('../lib/PostgresJSONQueryStrategy');
 
 describe("QueryStrategy.PostgresJSON", function() {
@@ -127,7 +128,7 @@ describe("QueryStrategy.PostgresJSON", function() {
         "classTemplate":"Subject",
         "content":[
             {
-            "specializedQuery":"Personal Details",
+            "personalDetails":true,
             "surnameComparator":"LIKE",
             "surname":"Pizzi",
             "givenNameComparator":"NOT LIKE",
@@ -136,7 +137,9 @@ describe("QueryStrategy.PostgresJSON", function() {
         },{
             "specializedQuery":"Subject",
             "codeComparator":"LIKE",
-            "code":"PAT002",
+            "code":"PAT002"
+        },{
+            "specializedQuery":"Subject",
             "sexComparator":"IN",
             "sex":["F","M"]
         },{
@@ -148,7 +151,12 @@ describe("QueryStrategy.PostgresJSON", function() {
         },{
             "pivotDataType":2,
             "classTemplate":"Sample",
-            "content":[{
+            "content":[
+                {
+                "specializedQuery":"Sample",
+                "biobankCodeComparator":"LIKE",
+                "biobankCode":"SAMPOO1"
+            },{
                 "fieldName":"Diagnosis",
                 "fieldType":"text",
                 "isList":true,
@@ -187,11 +195,11 @@ describe("QueryStrategy.PostgresJSON", function() {
         });
     });
 
-    describe("#composeSpecializedSubjectQuery", function() {
+    describe("#composeSpecializedQuery", function() {
         it("composes a query from a criteria object containing specialized fields on subject", function() {
             var subjProperties = subjectParamsObj.content[1];
-            var parameteredQuery = this.strategy.composeSpecializedSubjectQuery(subjProperties);
-            var subquery = "d.code LIKE $1 AND d.sex IN ($2,$3)";
+            var parameteredQuery = this.strategy.composeSpecializedQuery(subjProperties, {}, "d.");
+            var subquery = "d.code LIKE $1";
             expect(parameteredQuery).to.have.property('subquery');
             expect(parameteredQuery.subquery).to.equal(subquery);
             // TODO add parameters check into the array
@@ -307,15 +315,15 @@ describe("QueryStrategy.PostgresJSON", function() {
             var query = this.strategy.compose(subjectParamsObj);
 
             var commonTableExpr = [
-                "WITH pd AS (SELECT * FROM personal_details WHERE surname LIKE $2 AND given_name LIKE $3), ",
-                "nested_1 AS (SELECT * FROM sample WHERE type = $10 AND (((metadata->$11->'value'->>0)::text IN ($12))))"
+                "WITH pd AS (SELECT * FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
+                "nested_1 AS (SELECT * FROM sample WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->'value'->>0)::text IN ($13))))"
             ].join("");
             var mainQuery = [
                 "SELECT DISTINCT d.id FROM subject d ",
-                "INNER JOIN pd ON pd. = d.id ",
+                "INNER JOIN pd ON pd.id = d.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
-                "WHERE d.type = $1",
-                "AND (d.code LIKE $4 AND d.sex IN ($5,$6) AND ((d.metadata->$7->'value'->>0)::text IN ($8, $9)));"
+                "WHERE d.type = $1 ",
+                "AND ((d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->'value'->>0)::text IN ($8,$9)));"
             ].join("");
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
