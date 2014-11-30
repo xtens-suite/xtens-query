@@ -328,6 +328,8 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
+            console.log(query.parameters);
+            expect(query.parameters).to.have.length(13);
         });
 
         /*
