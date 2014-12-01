@@ -126,7 +126,7 @@ describe("QueryStrategy.PostgresJSON", function() {
     var subjectParamsObj = {
         "pivotDataType":1,
         "classTemplate":"Subject",
-        "content":[
+        "content": [
             {
             "personalDetails":true,
             "surnameComparator":"LIKE",
@@ -164,6 +164,15 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "fieldValue":["Neuroblastoma"]
             }]
         }
+        ]
+    };
+
+    var emptySampleObj = {
+        "pivotDataType": 2,
+        "classTemplate": "Sample",
+        "content": [
+            {"specializedQuery": "Sample"},
+            {}
         ]
     }; 
 
@@ -332,14 +341,12 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query.parameters).to.have.length(13);
         });
 
-        /*
-           it("should throw an error if you are using an unallowed comparator", function() {
-           var spy = sinon.spy(this.strategy, 'compose');
-           var query = this.strategy.compose(nestedWithSQLInjection);
-           expect(spy).to.have.thrown();
-           this.strategy.compose.restore();
-
-           }); */
+        it("composes a query from an empty sample criteria (containing an empty specialized criteria)", function() {
+            var query = this.strategy.compose(emptySampleObj);
+            var expectedStatement = "SELECT * FROM sample d WHERE d.type = $1;";
+            expect(query.statement).to.equal(expectedStatement);
+            expect(query.parameters).to.eql([emptySampleObj.pivotDataType]);
+        });
     });
 
 });
