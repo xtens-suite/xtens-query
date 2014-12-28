@@ -223,8 +223,8 @@ describe("QueryStrategy.PostgresJSON", function() {
             var whereClause = "WHERE d.type = $1 AND (" +
                 "((d.metadata->$2->>'value')::text = $3) AND " +
                 "((d.metadata->$4->>'value')::text IN ($5,$6,$7)) AND " +
-                "((d.metadata->$8->>'value')::float >= $9 AND " + "(d.metadata->$8->'unit')::text LIKE $10) AND " +
-                "((d.metadata->$11->>'value')::integer > $12 AND " + "(d.metadata->$11->'unit')::text LIKE $13))";
+                "((d.metadata->$8->>'value')::float >= $9 AND " + "(d.metadata->$8->>'unit')::text LIKE $10) AND " +
+                "((d.metadata->$11->>'value')::integer > $12 AND " + "(d.metadata->$11->>'unit')::text LIKE $13))";
             var parameters = [ criteriaObj.pivotDataType, 
                 criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue,
                 criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue[0], 
@@ -253,14 +253,14 @@ describe("QueryStrategy.PostgresJSON", function() {
         it("composes a set of queries from a nested criteria object", function() {
             var commonTableExpressions = [
                 "SELECT * FROM data WHERE type = $14 AND (((metadata->$15->>'value')::text IN ($16,$17)))", //CGH
-                "SELECT * FROM sample WHERE type = $10 AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->'unit')::text LIKE $13))",
+                "SELECT * FROM sample WHERE type = $10 AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->>'unit')::text LIKE $13))",
                 "SELECT * FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24)))", // Microarray
-                "SELECT * FROM sample WHERE type = $18 AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->'unit')::text LIKE $21))",
+                "SELECT * FROM sample WHERE type = $18 AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->>'unit')::text LIKE $21))",
                 "SELECT * FROM sample WHERE type = $7 AND (((metadata->$8->>'value')::text IN ($9)))"
             ];
             var selectStatement = "SELECT * FROM subject d"; 
             var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->>'value')::integer <= $3 "; 
-            whereClause += "AND (d.metadata->$2->'unit')::text LIKE $4) AND ((d.metadata->$5->>'value')::text IN ($6)))";
+            whereClause += "AND (d.metadata->$2->>'unit')::text LIKE $4) AND ((d.metadata->$5->>'value')::text IN ($6)))";
             var parameters = [ nestedParamsObj.pivotDataType,
                 nestedParamsObj.content[0].fieldName, nestedParamsObj.content[0].fieldValue, nestedParamsObj.content[0].fieldUnit, // Subject
                 nestedParamsObj.content[1].fieldName, nestedParamsObj.content[1].fieldValue[0],
@@ -298,10 +298,10 @@ describe("QueryStrategy.PostgresJSON", function() {
             var commonTableExpr = [
                 "WITH nested_1 AS (SELECT * FROM sample WHERE type = $7 AND (((metadata->$8->>'value')::text IN ($9)))), ",
                 "nested_2 AS (SELECT * FROM sample WHERE type = $10 ",
-                "AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->'unit')::text LIKE $13))), ",
+                "AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->>'unit')::text LIKE $13))), ",
                 "nested_3 AS (SELECT * FROM data WHERE type = $14 AND (((metadata->$15->>'value')::text IN ($16,$17)))), ",
                 "nested_4 AS (SELECT * FROM sample WHERE type = $18 ",
-                "AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->'unit')::text LIKE $21))), ",
+                "AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->>'unit')::text LIKE $21))), ",
                 "nested_5 AS (SELECT * FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24))))"
             ].join("");
             var mainQuery = [
@@ -312,7 +312,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "INNER JOIN nested_4 ON nested_4.parent_sample = nested_1.id ",
                 "INNER JOIN nested_5 ON nested_5.parent_sample = nested_4.id ",
                 "WHERE d.type = $1 ",
-                "AND (((d.metadata->$2->>'value')::integer <= $3 AND (d.metadata->$2->'unit')::text LIKE $4) ",
+                "AND (((d.metadata->$2->>'value')::integer <= $3 AND (d.metadata->$2->>'unit')::text LIKE $4) ",
                 "AND ((d.metadata->$5->>'value')::text IN ($6)));"
             ].join("");
             expect(query).to.have.property('statement');
