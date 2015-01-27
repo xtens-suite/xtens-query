@@ -329,7 +329,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             ].join("");
             var mainQuery = [
                 "SELECT DISTINCT d.id FROM subject d ",
-                "INNER JOIN pd ON pd.id = d.personal_info ",
+                "LEFT JOIN pd ON pd.id = d.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
                 "WHERE d.type = $1 ",
                 "AND ((d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->>'value')::text IN ($8,$9)));"
