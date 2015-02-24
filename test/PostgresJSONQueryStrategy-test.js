@@ -54,7 +54,7 @@ describe("QueryStrategy.PostgresJSON", function() {
 
     var nestedParamsObj = {
         "pivotDataType":1,
-        "classTemplate": "Subject",
+        "model": "Subject",
         "content":[{
             "fieldName":"Diagnosis Age",
             "fieldType":"integer",
@@ -70,7 +70,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             "fieldValue":["Diseased"]
         },{
             "pivotDataType":2,
-            "classTemplate":"Sample",
+            "model":"Sample",
             "content":[{
                 "fieldName":"Diagnosis",
                 "fieldType":"text",
@@ -79,7 +79,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "fieldValue":["Neuroblastoma"]
             },{
                 "pivotDataType":6,
-                "classTemplate":"Sample",
+                "model":"Sample",
                 "content":[{
                     "fieldName":"quantity",
                     "fieldType":"float",
@@ -89,7 +89,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                     "fieldUnit":"μl"
                 },{
                     "pivotDataType":3,
-                    "classTemplate":"Generic",
+                    "model":"Generic",
                     "content":[{
                         "fieldName":"Overall Result",
                         "fieldType":"text",
@@ -100,7 +100,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 }]
             },{
                 "pivotDataType":7,
-                "classTemplate":"Sample",
+                "model":"Sample",
                 "content":[{
                     "fieldName":"quantity",
                     "fieldType":"float",
@@ -110,7 +110,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                     "fieldUnit":"µg"
                 },{
                     "pivotDataType":8,
-                    "classTemplate":"Generic",
+                    "model":"Generic",
                     "content":[{
                         "fieldName":"hypoxia signature",
                         "fieldType":"text",
@@ -125,7 +125,7 @@ describe("QueryStrategy.PostgresJSON", function() {
 
     var subjectParamsObj = {
         "pivotDataType":1,
-        "classTemplate":"Subject",
+        "model":"Subject",
         "content": [
             {
             "personalDetails":true,
@@ -150,7 +150,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             "fieldValue":["Diseased","Deceased"]
         },{
             "pivotDataType":2,
-            "classTemplate":"Sample",
+            "model":"Sample",
             "content":[
                 {
                 "specializedQuery":"Sample",
@@ -169,7 +169,7 @@ describe("QueryStrategy.PostgresJSON", function() {
 
     var emptySampleObj = {
         "pivotDataType": 2,
-        "classTemplate": "Sample",
+        "model": "Sample",
         "content": [
             {"specializedQuery": "Sample"},
             {}
