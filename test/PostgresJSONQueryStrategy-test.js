@@ -235,9 +235,6 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(parameteredQuery).to.have.property('select');
             expect(parameteredQuery).to.have.property('where');
             expect(parameteredQuery).to.have.property('previousOutput');
-            /*
-               expect(parameteredQuery).to.have.property('parameters');
-               expect(parameteredQuery).to.have.property('lastPosition'); */
             expect(parameteredQuery.select).to.equal(selectStatement);
             expect(parameteredQuery.where).to.equal(whereClause);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
