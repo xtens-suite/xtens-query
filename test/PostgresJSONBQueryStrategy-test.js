@@ -61,7 +61,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
     describe("#composeSingle", function() {
         
-        it("compose a query from a criteria object containing only nonrecursive fields", function() {
+        it("compose a query from criteria with positive matching and range conditions on nonrecursive fields", function() {
             var parameteredQuery = this.strategy.composeSingle(criteriaObj);
             var selectStatement = "SELECT * FROM data d";
             var whereClause = "WHERE d.type = $1 AND (" +
@@ -82,6 +82,31 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(parameteredQuery.where).to.equal(whereClause);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
         
+        });
+
+        it("compose a query from criteria with exclusion matching and range conditions on nonrecursive fields", function() {
+            
+            criteriaObj.content[0].comparator = "<>";
+            criteriaObj.content[1].comparator = "NOT IN";
+            var selectStatement = "SELECT * FROM data d";
+            var whereClause = "WHERE d.type = $1 AND (" +
+                "(NOT d.metadata @> $2) AND (NOT d.metadata @> $3 AND NOT d.metadata @> $4 AND NOT d.metadata @> $5) AND " +
+                "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
+                "((d.metadata->$9->>'value')::integer > $10 AND " + "d.metadata @> $11))";
+            var parameters = [ criteriaObj.pivotDataType,
+                "\'{\"constellation\":{\"value\":\"cepheus\"}}\'", "\'{\"type\":{\"value\":\"hypergiant\"}}\'",
+                "\'{\"type\":{\"value\":\"supergiant\"}}\'", "\'{\"type\":{\"value\":\"main-sequence star\"}}\'",
+                criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, "\'{\"mass\":{\"unit\":\"M☉\"}}\'",
+                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, "\'{\"distance\":{\"unit\":\"pc\"}}\'"
+            ];
+            var parameteredQuery = this.strategy.composeSingle(criteriaObj);
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+
         });
 
     });

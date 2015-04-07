@@ -2,6 +2,7 @@ var expect = require('chai').expect;
 var sinon = require('sinon');
 var QueryBuilder = require('../lib/QueryBuilder');
 var PostgresJSONQueryStrategy = require('../lib/PostgresJSONQueryStrategy.js');
+var PostgresJSONBQueryStrategy = require('../lib/PostgresJSONQueryStrategy.js');
 
 describe('#QueryBuilder', function() {
     
@@ -10,7 +11,7 @@ describe('#QueryBuilder', function() {
         it('should have a strategy property with a compose method', function() {
             var builder = new QueryBuilder();
             expect(builder).to.have.property('strategy');
-            expect(builder.strategy).to.be.an.instanceof(PostgresJSONQueryStrategy);
+            expect(builder.strategy).to.be.an.instanceof(PostgresJSONBQueryStrategy);
         });
 
     });
