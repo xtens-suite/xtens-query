@@ -54,7 +54,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var res = this.strategy.getSubqueryRow(criteriaObj.content[0], previousOutput, 'd.');
             expect(res.subquery).to.equal("d.metadata @> $"+ (i+1));
             expect(res.previousOutput).to.have.property("parameters");
-            expect(res.previousOutput.parameters).to.eql(["\'{\"constellation\":{\"value\":\"cepheus\"}}\'"]);
+            expect(res.previousOutput.parameters).to.eql(['{\"constellation\":{\"value\":\"cepheus\"}}']);
         });
         
     });
@@ -69,10 +69,10 @@ describe("QueryStrategy.PostgresJSONB", function() {
                 "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
                 "((d.metadata->$9->>'value')::integer > $10 AND " + "d.metadata @> $11))";
             var parameters = [ criteriaObj.pivotDataType,
-                "\'{\"constellation\":{\"value\":\"cepheus\"}}\'", "\'{\"type\":{\"value\":\"hypergiant\"}}\'",
-                "\'{\"type\":{\"value\":\"supergiant\"}}\'", "\'{\"type\":{\"value\":\"main-sequence star\"}}\'",
-                criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, "\'{\"mass\":{\"unit\":\"M☉\"}}\'",
-                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, "\'{\"distance\":{\"unit\":\"pc\"}}\'"
+                '{\"constellation\":{\"value\":\"cepheus\"}}', '{\"type\":{\"value\":\"hypergiant\"}}',
+                '{\"type\":{\"value\":\"supergiant\"}}', '{\"type\":{\"value\":\"main-sequence star\"}}',
+                criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, '{\"mass\":{\"unit\":\"M☉\"}}',
+                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, '{\"distance\":{\"unit\":\"pc\"}}'
             ];
             
             expect(parameteredQuery).to.have.property('select');
@@ -94,10 +94,10 @@ describe("QueryStrategy.PostgresJSONB", function() {
                 "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
                 "((d.metadata->$9->>'value')::integer > $10 AND " + "d.metadata @> $11))";
             var parameters = [ criteriaObj.pivotDataType,
-                "\'{\"constellation\":{\"value\":\"cepheus\"}}\'", "\'{\"type\":{\"value\":\"hypergiant\"}}\'",
-                "\'{\"type\":{\"value\":\"supergiant\"}}\'", "\'{\"type\":{\"value\":\"main-sequence star\"}}\'",
-                criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, "\'{\"mass\":{\"unit\":\"M☉\"}}\'",
-                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, "\'{\"distance\":{\"unit\":\"pc\"}}\'"
+                '{\"constellation\":{\"value\":\"cepheus\"}}', '{\"type\":{\"value\":\"hypergiant\"}}',
+                '{\"type\":{\"value\":\"supergiant\"}}', '{\"type\":{\"value\":\"main-sequence star\"}}',
+                criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, '{\"mass\":{\"unit\":\"M☉\"}}',
+                criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, '{\"distance\":{\"unit\":\"pc\"}}'
             ];
             var parameteredQuery = this.strategy.composeSingle(criteriaObj);
             expect(parameteredQuery).to.have.property('select');
