@@ -40,6 +40,45 @@ var criteriaObj = {
     ]
 };
 
+var booleanCriteriaObj = {
+    "pivotDataType": 1,
+    "content": [
+    {
+        "comparator": "=",
+        "fieldName": "is_neutron_star",
+        "fieldType": "boolean",
+        "fieldValue": true,
+        "isList": false
+    },
+    {
+        "comparator": "=",
+        "fieldName": "is_black_hole",
+        "fieldType": "boolean",
+        "fieldValue": false
+    }
+    ]
+};
+
+var booleanStringCriteriaObj = {
+    "pivotDataType": 1,
+    "content": [
+    {
+        "comparator": "=",
+        "fieldName": "is_neutron_star",
+        "fieldType": "boolean",
+        "fieldValue": "true",
+        "isList": false
+    },
+    {
+        "comparator": "=",
+        "fieldName": "is_black_hole",
+        "fieldType": "boolean",
+        "fieldValue": "false"
+    }
+    ]
+};
+
+
 describe("QueryStrategy.PostgresJSONB", function() {
 
     before(function() {
@@ -109,7 +148,38 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
         });
 
-    });
+        it("compose a query with two boolean fields (from string)", function() {
+            
+            var selectStatement = "SELECT * FROM data d";
+            var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
+            var parameters = [booleanStringCriteriaObj.pivotDataType,
+            '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
+            var parameteredQuery = this.strategy.composeSingle(booleanStringCriteriaObj);
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
 
+        });
+
+        it("compose a query with two boolean fields (from boolean)", function() {
+            
+            var selectStatement = "SELECT * FROM data d";
+            var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
+            var parameters = [booleanCriteriaObj.pivotDataType,
+            '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
+            var parameteredQuery = this.strategy.composeSingle(booleanCriteriaObj);
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+
+        });
+
+    });
 
 });
