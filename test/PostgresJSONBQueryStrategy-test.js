@@ -78,6 +78,32 @@ var booleanStringCriteriaObj = {
     ]
 };
 
+var loopCriteriaObj = {
+    "pivotDataType": 7,
+    "content": [
+        {
+            "comparator": "=",
+            "fieldName": "gene_name",
+            "fieldType": "text",
+            "fieldValue": "MYCN",
+            "isInLoop": true
+        }
+    ]
+};
+
+var loopListCriteriaObj = {
+    "pivotDataType": 7,
+    "content": [
+        {
+            "comparator": "=",
+            "fieldName": "gene_name",
+            "fieldType": "text",
+            "fieldValue": ["MYCN","ALK","CD44","SOX4"],
+            "isList": true,
+            "isInLoop": true
+        }
+    ]
+};
 
 describe("QueryStrategy.PostgresJSONB", function() {
 
@@ -96,6 +122,51 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput.parameters).to.eql(['{\"constellation\":{\"value\":\"cepheus\"}}']);
         });
         
+    });
+
+    describe("#getSubqueryRowAttribute", function() {
+
+        it("should return a clause with a containment operator", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var res = this.strategy.getSubqueryRowAttribute(criteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata @> $"+ (i+1));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"constellation\":{\"value\":\"cepheus\"}}']);
+        });
+        
+    });
+
+    describe("#getSubqueryRowLoop", function() {
+        
+        it("should return a clause with the element exists [?] jsonb operator", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['gene_name','MYCN']);
+        });
+
+        it("should return a clause with the element exists [?] jsonb operator with NOT condition", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            loopCriteriaObj.content[0].comparator = '<>';
+            var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("(NOT d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['gene_name','MYCN']);
+        });
+        /*
+        it("should return a clause with the element exists [?] jsonb operator", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata->$"+(++i)+"->values ? $"+(++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['gene_name','MYCN']);
+        }); */
+
     });
 
     describe("#composeSingle", function() {
