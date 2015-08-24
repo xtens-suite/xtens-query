@@ -302,7 +302,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "nested_5 AS (SELECT * FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24))))"
             ].join("");
             var mainQuery = [
-                "SELECT DISTINCT d.id, d.code, d.metadata FROM subject d ",
+                "SELECT DISTINCT d.id, d.code, d.sex, d.metadata FROM subject d ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
                 "INNER JOIN nested_2 ON nested_2.parent_sample = nested_1.id ",
                 "INNER JOIN nested_3 ON nested_3.parent_sample = nested_2.id ",
@@ -325,7 +325,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "nested_1 AS (SELECT * FROM sample WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
             ].join("");
             var mainQuery = [
-                "SELECT DISTINCT d.id, d.code, d.metadata FROM subject d ",
+                "SELECT DISTINCT d.id, d.code, d.sex, d.metadata FROM subject d ",
                 "LEFT JOIN pd ON pd.id = d.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
                 "WHERE d.type = $1 ",
