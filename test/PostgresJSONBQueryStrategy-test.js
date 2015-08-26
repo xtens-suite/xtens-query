@@ -95,7 +95,7 @@ var loopListCriteriaObj = {
     "pivotDataType": 7,
     "content": [
         {
-            "comparator": "=",
+            "comparator": "?&",
             "fieldName": "gene_name",
             "fieldType": "text",
             "fieldValue": ["MYCN","ALK","CD44","SOX4"],
@@ -145,7 +145,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
             expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
-            expect(res.previousOutput.parameters).to.eql(['gene_name','MYCN']);
+            expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
         });
 
         it("should return a clause with the element exists [?] jsonb operator with NOT condition", function() {
@@ -155,17 +155,27 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
             expect(res.subquery).to.equal("(NOT d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
-            expect(res.previousOutput.parameters).to.eql(['gene_name','MYCN']);
+            expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
         });
-        /*
+        
         it("should return a clause with the element exists [?] jsonb operator", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
-            var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
-            expect(res.subquery).to.equal("d.metadata->$"+(++i)+"->values ? $"+(++i));
+            var res = this.strategy.getSubqueryRowLoop(loopListCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ?& $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
-            expect(res.previousOutput.parameters).to.eql(['gene_name','MYCN']);
-        }); */
+            expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue]);
+        });
+
+        it("should return a clause with the element exists [?] jsonb operator", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            loopListCriteriaObj.content[0].comparator = '?|';
+            var res = this.strategy.getSubqueryRowLoop(loopListCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ?| $"+(++i)+")");
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue]);
+        });
 
     });
 
