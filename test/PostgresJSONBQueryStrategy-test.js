@@ -261,6 +261,21 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
         });
 
+        it("compose a query with a loop array condition", function() {
+            
+            var selectStatement = "SELECT * FROM data d";
+            var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->'values' " + loopListCriteriaObj.content[0].comparator + " $3)))";
+            var parameters = [loopListCriteriaObj.pivotDataType, loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue];
+            var parameteredQuery = this.strategy.composeSingle(loopListCriteriaObj);
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+
+        });
+
     });
 
 });
