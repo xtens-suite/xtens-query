@@ -183,7 +183,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
         
         it("compose a query from criteria with positive matching and range conditions on nonrecursive fields", function() {
             var parameteredQuery = this.strategy.composeSingle(criteriaObj);
-            var selectStatement = "SELECT * FROM data d";
+            var selectStatement = "SELECT id, metadata FROM data d";
             var whereClause = "WHERE d.type = $1 AND (" +
                 "(d.metadata @> $2) AND (d.metadata @> $3 OR d.metadata @> $4 OR d.metadata @> $5) AND " +
                 "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
@@ -208,7 +208,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             
             criteriaObj.content[0].comparator = "<>";
             criteriaObj.content[1].comparator = "NOT IN";
-            var selectStatement = "SELECT * FROM data d";
+            var selectStatement = "SELECT id, metadata FROM data d";
             var whereClause = "WHERE d.type = $1 AND (" +
                 "(NOT d.metadata @> $2) AND (NOT d.metadata @> $3 OR NOT d.metadata @> $4 OR NOT d.metadata @> $5) AND " +
                 "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
@@ -231,7 +231,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
         it("compose a query with two boolean fields (from string)", function() {
             
-            var selectStatement = "SELECT * FROM data d";
+            var selectStatement = "SELECT id, metadata FROM data d";
             var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
             var parameters = [booleanStringCriteriaObj.pivotDataType,
             '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
@@ -247,7 +247,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
         it("compose a query with two boolean fields (from boolean)", function() {
             
-            var selectStatement = "SELECT * FROM data d";
+            var selectStatement = "SELECT id, metadata FROM data d";
             var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
             var parameters = [booleanCriteriaObj.pivotDataType,
             '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
@@ -263,7 +263,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
         it("compose a query with a loop array condition", function() {
             
-            var selectStatement = "SELECT * FROM data d";
+            var selectStatement = "SELECT id, metadata FROM data d";
             var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->'values' " + loopListCriteriaObj.content[0].comparator + " $3)))";
             var parameters = [loopListCriteriaObj.pivotDataType, loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue];
             var parameteredQuery = this.strategy.composeSingle(loopListCriteriaObj);

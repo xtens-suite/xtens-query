@@ -192,7 +192,7 @@ describe("QueryStrategy.PostgresJSON", function() {
         it("composes a query from a criteria object containing specialized fields on subject and personal details", function() {
             var pdProperties = subjectParamsObj.content[0];
             var parameteredQuery = this.strategy.composeSpecializedPersonalDetailsQuery(pdProperties);
-            var selectStatement = "SELECT * FROM personal_details";
+            var selectStatement = "SELECT given_name, surname, birth_date FROM personal_details";
             var whereClause = "WHERE surname "+pdProperties.surnameComparator+" $1 AND given_name "+pdProperties.givenNameComparator+" $2";
             var parameters = [pdProperties.surname, pdProperties.givenName];
             expect(parameteredQuery).to.have.property('select');
@@ -219,7 +219,7 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from a criteria object containing only nonrecursive fields", function() {
             var parameteredQuery = this.strategy.composeSingle(criteriaObj);
-            var selectStatement = "SELECT * FROM data d";
+            var selectStatement = "SELECT id, metadata FROM data d";
             var whereClause = "WHERE d.type = $1 AND (" +
                 "((d.metadata->$2->>'value')::text = $3) AND " +
                 "((d.metadata->$4->>'value')::text IN ($5,$6,$7)) AND " +
@@ -243,19 +243,19 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from a criteria object containing specialized fields on subject and personal details", function() {
             var commonTableExpr = [
-                "SELECT * FROM personal_details pd WHERE pd.surname NOT LIKE "
+                "SELECT given_name, surname, birth_date FROM personal_details pd WHERE pd.surname NOT LIKE "
             ]; 
         });
 
         it("composes a set of queries from a nested criteria object", function() {
             var commonTableExpressions = [
-                "SELECT * FROM data WHERE type = $14 AND (((metadata->$15->>'value')::text IN ($16,$17)))", //CGH
-                "SELECT * FROM sample WHERE type = $10 AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->>'unit')::text LIKE $13))",
-                "SELECT * FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24)))", // Microarray
-                "SELECT * FROM sample WHERE type = $18 AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->>'unit')::text LIKE $21))",
-                "SELECT * FROM sample WHERE type = $7 AND (((metadata->$8->>'value')::text IN ($9)))"
+                "SELECT id, metadata FROM data WHERE type = $14 AND (((metadata->$15->>'value')::text IN ($16,$17)))", //CGH
+                "SELECT id, metadata FROM sample WHERE type = $10 AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->>'unit')::text LIKE $13))",
+                "SELECT id, metadata FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24)))", // Microarray
+                "SELECT id, metadata FROM sample WHERE type = $18 AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->>'unit')::text LIKE $21))",
+                "SELECT id, metadata FROM sample WHERE type = $7 AND (((metadata->$8->>'value')::text IN ($9)))"
             ];
-            var selectStatement = "SELECT * FROM subject d"; 
+            var selectStatement = "SELECT id, metadata FROM subject d"; 
             var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->>'value')::integer <= $3 "; 
             whereClause += "AND (d.metadata->$2->>'unit')::text LIKE $4) AND ((d.metadata->$5->>'value')::text IN ($6)))";
             var parameters = [ nestedParamsObj.pivotDataType,
@@ -293,13 +293,13 @@ describe("QueryStrategy.PostgresJSON", function() {
             var query = this.strategy.compose(nestedParamsObj);
 
             var commonTableExpr = [
-                "WITH nested_1 AS (SELECT * FROM sample WHERE type = $7 AND (((metadata->$8->>'value')::text IN ($9)))), ",
-                "nested_2 AS (SELECT * FROM sample WHERE type = $10 ",
+                "WITH nested_1 AS (SELECT id, metadata FROM sample WHERE type = $7 AND (((metadata->$8->>'value')::text IN ($9)))), ",
+                "nested_2 AS (SELECT id, metadata FROM sample WHERE type = $10 ",
                 "AND (((metadata->$11->>'value')::float >= $12 AND (metadata->$11->>'unit')::text LIKE $13))), ",
-                "nested_3 AS (SELECT * FROM data WHERE type = $14 AND (((metadata->$15->>'value')::text IN ($16,$17)))), ",
-                "nested_4 AS (SELECT * FROM sample WHERE type = $18 ",
+                "nested_3 AS (SELECT id, metadata FROM data WHERE type = $14 AND (((metadata->$15->>'value')::text IN ($16,$17)))), ",
+                "nested_4 AS (SELECT id, metadata FROM sample WHERE type = $18 ",
                 "AND (((metadata->$19->>'value')::float >= $20 AND (metadata->$19->>'unit')::text LIKE $21))), ",
-                "nested_5 AS (SELECT * FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24))))"
+                "nested_5 AS (SELECT id, metadata FROM data WHERE type = $22 AND (((metadata->$23->>'value')::text IN ($24))))"
             ].join("");
             var mainQuery = [
                 "SELECT DISTINCT d.id, d.code, d.sex, d.metadata FROM subject d ",
@@ -321,8 +321,8 @@ describe("QueryStrategy.PostgresJSON", function() {
             var query = this.strategy.compose(subjectParamsObj);
 
             var commonTableExpr = [
-                "WITH pd AS (SELECT * FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
-                "nested_1 AS (SELECT * FROM sample WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
+                "WITH pd AS (SELECT given_name, surname, birth_date FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
+                "nested_1 AS (SELECT id, metadata FROM sample WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
             ].join("");
             var mainQuery = [
                 "SELECT DISTINCT d.id, d.code, d.sex, d.metadata FROM subject d ",
@@ -340,7 +340,7 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from an empty sample criteria (containing an empty specialized criteria)", function() {
             var query = this.strategy.compose(emptySampleObj);
-            var expectedStatement = "SELECT * FROM sample d WHERE d.type = $1;";
+            var expectedStatement = "SELECT id, metadata FROM sample d WHERE d.type = $1;";
             expect(query.statement).to.equal(expectedStatement);
             expect(query.parameters).to.eql([emptySampleObj.pivotDataType]);
         });
