@@ -195,7 +195,7 @@ describe("QueryStrategy.PostgresJSON", function() {
         it("composes a query from a criteria object containing specialized fields on subject and personal details", function() {
             var pdProperties = subjectParamsObj.content[0];
             var parameteredQuery = this.strategy.composeSpecializedPersonalDetailsQuery(pdProperties);
-            var selectStatement = "SELECT given_name, surname, birth_date FROM personal_details";
+            var selectStatement = "SELECT id, given_name, surname, birth_date FROM personal_details";
             var whereClause = "WHERE surname "+pdProperties.surnameComparator+" $1 AND given_name "+pdProperties.givenNameComparator+" $2";
             var parameters = [pdProperties.surname, pdProperties.givenName];
             expect(parameteredQuery).to.have.property('select');
@@ -246,7 +246,7 @@ describe("QueryStrategy.PostgresJSON", function() {
 
         it("composes a query from a criteria object containing specialized fields on subject and personal details", function() {
             var commonTableExpr = [
-                "SELECT given_name, surname, birth_date FROM personal_details pd WHERE pd.surname NOT LIKE "
+                "SELECT id, given_name, surname, birth_date FROM personal_details pd WHERE pd.surname NOT LIKE "
             ]; 
         });
 
@@ -336,7 +336,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             var query = this.strategy.compose(subjectParamsObj);
 
             var commonTableExpr = [
-                "WITH pd AS (SELECT given_name, surname, birth_date FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
+                "WITH pd AS (SELECT id, given_name, surname, birth_date FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
                 "nested_1 AS (SELECT id, biobank_code, parent_subject, parent_sample FROM sample ",
                 "WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
             ].join("");
