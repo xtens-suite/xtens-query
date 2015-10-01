@@ -45,7 +45,7 @@ var booleanCriteriaObj = {
     "pivotDataType": 1,
     "model": "Data",
     "content": [
-    {
+        {
         "comparator": "=",
         "fieldName": "is_neutron_star",
         "fieldType": "boolean",
@@ -65,7 +65,7 @@ var booleanStringCriteriaObj = {
     "pivotDataType": 1,
     "model": "Data",
     "content": [
-    {
+        {
         "comparator": "=",
         "fieldName": "is_neutron_star",
         "fieldType": "boolean",
@@ -85,12 +85,12 @@ var loopCriteriaObj = {
     "pivotDataType": 7,
     "content": [
         {
-            "comparator": "=",
-            "fieldName": "gene_name",
-            "fieldType": "text",
-            "fieldValue": "MYCN",
-            "isInLoop": true
-        }
+        "comparator": "=",
+        "fieldName": "gene_name",
+        "fieldType": "text",
+        "fieldValue": "MYCN",
+        "isInLoop": true
+    }
     ]
 };
 
@@ -98,15 +98,27 @@ var loopListCriteriaObj = {
     "pivotDataType": 7,
     "content": [
         {
-            "comparator": "?&",
-            "fieldName": "gene_name",
-            "fieldType": "text",
-            "fieldValue": ["MYCN","ALK","CD44","SOX4"],
-            "isList": true,
-            "isInLoop": true
-        }
+        "comparator": "?&",
+        "fieldName": "gene_name",
+        "fieldType": "text",
+        "fieldValue": ["MYCN","ALK","CD44","SOX4"],
+        "isList": true,
+        "isInLoop": true
+    }
     ]
 };
+
+var sampleParamsObj = {"pivotDataType":4,"model":"Sample","getSubject":true,"content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"pivotDataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"pivotDataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"pivotDataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
+
+var emptySampleObj = {
+    "pivotDataType": 2,
+    "model": "Sample",
+    "content": [
+        {"specializedQuery": "Sample"},
+        {}
+    ]
+}; 
+
 
 describe("QueryStrategy.PostgresJSONB", function() {
 
@@ -124,7 +136,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql(['{\"constellation\":{\"value\":\"cepheus\"}}']);
         });
-        
+
     });
 
     describe("#getSubqueryRowAttribute", function() {
@@ -137,11 +149,11 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql(['{\"constellation\":{\"value\":\"cepheus\"}}']);
         });
-        
+
     });
 
     describe("#getSubqueryRowLoop", function() {
-        
+
         it("should return a clause with the element exists [?] jsonb operator", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
@@ -160,7 +172,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
         });
-        
+
         it("should return a clause with the element exists [?] jsonb operator", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
@@ -183,7 +195,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
     });
 
     describe("#composeSingle", function() {
-        
+
         it("compose a query from criteria with positive matching and range conditions on nonrecursive fields", function() {
             var parameteredQuery = this.strategy.composeSingle(criteriaObj);
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
@@ -197,18 +209,18 @@ describe("QueryStrategy.PostgresJSONB", function() {
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, '{\"mass\":{\"unit\":\"M☉\"}}',
                 criteriaObj.content[3].fieldName, criteriaObj.content[3].fieldValue, '{\"distance\":{\"unit\":\"pc\"}}'
             ];
-            
+
             expect(parameteredQuery).to.have.property('select');
             expect(parameteredQuery).to.have.property('where');
             expect(parameteredQuery).to.have.property('previousOutput');
             expect(parameteredQuery.select).to.equal(selectStatement);
             expect(parameteredQuery.where).to.equal(whereClause);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
-        
+
         });
 
         it("compose a query from criteria with exclusion matching and range conditions on nonrecursive fields", function() {
-            
+
             criteriaObj.content[0].comparator = "<>";
             criteriaObj.content[1].comparator = "NOT IN";
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
@@ -233,39 +245,39 @@ describe("QueryStrategy.PostgresJSONB", function() {
         });
 
         it("compose a query with two boolean fields (from string)", function() {
-            
+
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
             var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
             var parameters = [booleanStringCriteriaObj.pivotDataType,
-            '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
-            var parameteredQuery = this.strategy.composeSingle(booleanStringCriteriaObj);
-            expect(parameteredQuery).to.have.property('select');
-            expect(parameteredQuery).to.have.property('where');
-            expect(parameteredQuery).to.have.property('previousOutput');
-            expect(parameteredQuery.select).to.equal(selectStatement);
-            expect(parameteredQuery.where).to.equal(whereClause);
-            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+                '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
+                var parameteredQuery = this.strategy.composeSingle(booleanStringCriteriaObj);
+                expect(parameteredQuery).to.have.property('select');
+                expect(parameteredQuery).to.have.property('where');
+                expect(parameteredQuery).to.have.property('previousOutput');
+                expect(parameteredQuery.select).to.equal(selectStatement);
+                expect(parameteredQuery.where).to.equal(whereClause);
+                expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
 
         });
 
         it("compose a query with two boolean fields (from boolean)", function() {
-            
+
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
             var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
             var parameters = [booleanCriteriaObj.pivotDataType,
-            '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
-            var parameteredQuery = this.strategy.composeSingle(booleanCriteriaObj);
-            expect(parameteredQuery).to.have.property('select');
-            expect(parameteredQuery).to.have.property('where');
-            expect(parameteredQuery).to.have.property('previousOutput');
-            expect(parameteredQuery.select).to.equal(selectStatement);
-            expect(parameteredQuery.where).to.equal(whereClause);
-            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+                '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
+                var parameteredQuery = this.strategy.composeSingle(booleanCriteriaObj);
+                expect(parameteredQuery).to.have.property('select');
+                expect(parameteredQuery).to.have.property('where');
+                expect(parameteredQuery).to.have.property('previousOutput');
+                expect(parameteredQuery.select).to.equal(selectStatement);
+                expect(parameteredQuery.where).to.equal(whereClause);
+                expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
 
         });
 
         it("compose a query with a loop array condition", function() {
-            
+
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
             var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->'values' " + loopListCriteriaObj.content[0].comparator + " $3)))";
             var parameters = [loopListCriteriaObj.pivotDataType, loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue];
@@ -277,6 +289,44 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(parameteredQuery.where).to.equal(whereClause);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
 
+        });
+
+    });
+
+    describe("#compose", function() {
+
+        it("composes a query from a nested sample criteria object", function() {
+            var query = this.strategy.compose(sampleParamsObj);
+            var commonTableExpr = [
+                "WITH s AS (SELECT id, code, sex FROM subject), ",
+                "pd AS (SELECT id, given_name, surname, birth_date FROM personal_details), ",
+                "nested_1 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
+                "WHERE type = $5 AND ((metadata @> $6) AND (metadata @> $7))), ",
+                "nested_2 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data WHERE type = $8 AND ((metadata @> $9))), ",
+                "nested_3 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
+                "WHERE type = $10 AND ((metadata @> $11 OR metadata @> $12) AND (metadata @> $13)))"
+            ].join("");
+            var mainQuery = [
+                "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d ",
+                "LEFT JOIN s ON s.id = d.parent_subject ",
+                "LEFT JOIN pd ON pd.id = d.personal_info ",
+                "INNER JOIN nested_1 ON nested_1.parent_sample = d.id ",
+                "INNER JOIN nested_2 ON nested_2.parent_data = nested_1.id ",
+                "INNER JOIN nested_3 ON nested_3.parent_data = nested_2.id ",
+                "WHERE d.type = $1 AND (((d.metadata->$2->>'value')::float >= $3 AND d.metadata @> $4));"
+            ].join("");
+            expect(query).to.have.property('statement');
+            expect(query).to.have.property('parameters');
+            expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
+            console.log(query.parameters);
+            expect(query.parameters).to.have.length(13);
+        });
+
+        it("composes a query from an empty sample criteria (containing an empty specialized criteria)", function() {
+            var query = this.strategy.compose(emptySampleObj);
+            var expectedStatement = "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d WHERE d.type = $1;";
+            expect(query.statement).to.equal(expectedStatement);
+            expect(query.parameters).to.eql([emptySampleObj.pivotDataType]);
         });
 
     });
