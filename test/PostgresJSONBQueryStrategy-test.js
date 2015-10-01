@@ -309,7 +309,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var mainQuery = [
                 "SELECT DISTINCT d.id, d.biobank_code, s.code, s.sex, pd.given_name, pd.surname, pd.birth_date, d.metadata FROM sample d ",
                 "LEFT JOIN s ON s.id = d.parent_subject ",
-                "LEFT JOIN pd ON pd.id = d.personal_info ",
+                "LEFT JOIN pd ON pd.id = s.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_sample = d.id ",
                 "INNER JOIN nested_2 ON nested_2.parent_data = nested_1.id ",
                 "INNER JOIN nested_3 ON nested_3.parent_data = nested_2.id ",
