@@ -108,7 +108,7 @@ var loopListCriteriaObj = {
     ]
 };
 
-var sampleParamsObj = {"pivotDataType":4,"model":"Sample","getSubject":true,"content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"pivotDataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"pivotDataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"pivotDataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
+var sampleParamsObj = {"pivotDataType":4,"model":"Sample","wantsSubject":true,"wantsPersonalInfo":true,"content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"pivotDataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"pivotDataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"pivotDataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
 
 var emptySampleObj = {
     "pivotDataType": 2,
@@ -307,7 +307,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
                 "WHERE type = $10 AND ((metadata @> $11 OR metadata @> $12) AND (metadata @> $13)))"
             ].join("");
             var mainQuery = [
-                "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d ",
+                "SELECT DISTINCT d.id, d.biobank_code, s.code, s.sex, pd.given_name, pd.surname, pd.birth_date, d.metadata FROM sample d ",
                 "LEFT JOIN s ON s.id = d.parent_subject ",
                 "LEFT JOIN pd ON pd.id = d.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_sample = d.id ",
