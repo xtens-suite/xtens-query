@@ -298,7 +298,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
         it("composes a query from a nested sample criteria object", function() {
             var query = this.strategy.compose(sampleParamsObj);
             var commonTableExpr = [
-                "WITH s AS (SELECT id, code, sex FROM subject), ",
+                "WITH s AS (SELECT id, code, sex, personal_info FROM subject), ",
                 "pd AS (SELECT id, given_name, surname, birth_date FROM personal_details), ",
                 "nested_1 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
                 "WHERE type = $5 AND ((metadata @> $6) AND (metadata @> $7))), ",
