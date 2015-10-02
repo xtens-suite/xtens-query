@@ -168,17 +168,6 @@ describe("QueryStrategy.PostgresJSON", function() {
         ]
     };
 
-    var sampleParamsObj = {"pivotDataType":4,"model":"Sample","content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"pivotDataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"pivotDataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"pivotDataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
-
-    var emptySampleObj = {
-        "pivotDataType": 2,
-        "model": "Sample",
-        "content": [
-            {"specializedQuery": "Sample"},
-            {}
-        ]
-    }; 
-
     before(function() {
         this.strategy = new PostgresJSONQueryStrategy();
     });
@@ -332,7 +321,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
         });
 
-        it("composes a query from a nested subject criteria object (containing personal info / specialized fields)", function() {
+        it("composes a query from a nested subject criteria object (containing specialized fields only)", function() {
             var query = this.strategy.compose(subjectParamsObj);
 
             var commonTableExpr = [
@@ -354,36 +343,28 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query.parameters).to.have.length(13);
         });
 
-        /*
-        it("composes a query from a nested sample criteria object", function() {
-            var query = this.strategy.compose(sampleParamsObj);
+        it("composes a query from a nested subject criteria object (containing specialized fields only)", function() {
+        
+            var query = this.strategy.compose(_.assign({wantsPersonalInfo: true}, _.cloneDeep(subjectParamsObj)));
             var commonTableExpr = [
-                "WITH nested_1 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
-                "WHERE type = $5 AND ((metadata @> $6) AND (metadata @> $7))), ",
-                "nested_2 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data WHERE type = $8 AND ((metadata @> $9))), ",
-                "nested_3 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
-                "WHERE type = $10 AND ((metadata @> $11 OR metadata @> $12) AND (metadata @> $13)))"
+                "WITH pd AS (SELECT id, given_name, surname, birth_date FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
+                "nested_1 AS (SELECT id, biobank_code, parent_subject, parent_sample FROM sample ",
+                "WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
             ].join("");
             var mainQuery = [
-                "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d ",
-                "INNER JOIN nested_1 ON nested_1.parent_sample = d.id ",
-                "INNER JOIN nested_2 ON nested_2.parent_data = nested_1.id ",
-                "INNER JOIN nested_3 ON nested_3.parent_data = nested_2.id ",
-                "WHERE d.type = $1 AND (((d.metadata->$2->>'value')::float >= $3 AND d.metadata @> $4));"
+                "SELECT DISTINCT d.id, d.code, d.sex, pd.given_name, pd.surname, pd.birth_date, d.metadata FROM subject d ",
+                "LEFT JOIN pd ON pd.id = d.personal_info ",
+                "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
+                "WHERE d.type = $1 ",
+                "AND ((d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->>'value')::text IN ($8,$9)));"
             ].join("");
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
             console.log(query.parameters);
             expect(query.parameters).to.have.length(13);
+        
         });
-
-        it("composes a query from an empty sample criteria (containing an empty specialized criteria)", function() {
-            var query = this.strategy.compose(emptySampleObj);
-            var expectedStatement = "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d WHERE d.type = $1;";
-            expect(query.statement).to.equal(expectedStatement);
-            expect(query.parameters).to.eql([emptySampleObj.pivotDataType]);
-        }); */
 
     });
 
