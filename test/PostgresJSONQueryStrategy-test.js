@@ -185,13 +185,13 @@ describe("QueryStrategy.PostgresJSON", function() {
             var pdProperties = subjectParamsObj.content[0];
             var parameteredQuery = this.strategy.composeSpecializedPersonalDetailsQuery(pdProperties);
             var selectStatement = "SELECT id, given_name, surname, birth_date FROM personal_details";
-            var whereClause = "WHERE surname "+pdProperties.surnameComparator+" $1 AND given_name "+pdProperties.givenNameComparator+" $2";
+            var subquery = "pd.surname "+pdProperties.surnameComparator+" $1 AND pd.given_name "+pdProperties.givenNameComparator+" $2";
             var parameters = [pdProperties.surname, pdProperties.givenName];
             expect(parameteredQuery).to.have.property('select');
             expect(parameteredQuery).to.have.property('where');
             expect(parameteredQuery).to.have.property('previousOutput');
             expect(parameteredQuery.select).to.equal(selectStatement);
-            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.subquery).to.equal(subquery);
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
         });
     });
@@ -325,7 +325,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             var query = this.strategy.compose(subjectParamsObj);
 
             var commonTableExpr = [
-                "WITH pd AS (SELECT id, given_name, surname, birth_date FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
+                "WITH pd AS (SELECT id, given_name, surname, birth_date FROM personal_details), ",
                 "nested_1 AS (SELECT id, biobank_code, parent_subject, parent_sample FROM sample ",
                 "WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
             ].join("");
@@ -334,7 +334,8 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "LEFT JOIN pd ON pd.id = d.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
                 "WHERE d.type = $1 ",
-                "AND ((d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->>'value')::text IN ($8,$9)));"
+                "AND ((pd.surname LIKE $2 AND pd.given_name NOT LIKE $3) ",
+                "AND (d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->>'value')::text IN ($8,$9)));"
             ].join("");
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
@@ -347,7 +348,7 @@ describe("QueryStrategy.PostgresJSON", function() {
         
             var query = this.strategy.compose(_.assign({wantsPersonalInfo: true}, _.cloneDeep(subjectParamsObj)));
             var commonTableExpr = [
-                "WITH pd AS (SELECT id, given_name, surname, birth_date FROM personal_details WHERE surname LIKE $2 AND given_name NOT LIKE $3), ",
+                "WITH pd AS (SELECT id, given_name, surname, birth_date FROM personal_details), ",
                 "nested_1 AS (SELECT id, biobank_code, parent_subject, parent_sample FROM sample ",
                 "WHERE type = $10 AND ((biobank_code LIKE $11) AND ((metadata->$12->>'value')::text IN ($13))))"
             ].join("");
@@ -355,8 +356,8 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "SELECT DISTINCT d.id, d.code, d.sex, pd.given_name, pd.surname, pd.birth_date, d.metadata FROM subject d ",
                 "LEFT JOIN pd ON pd.id = d.personal_info ",
                 "INNER JOIN nested_1 ON nested_1.parent_subject = d.id ",
-                "WHERE d.type = $1 ",
-                "AND ((d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->>'value')::text IN ($8,$9)));"
+                "WHERE d.type = $1 AND ((pd.surname LIKE $2 AND pd.given_name NOT LIKE $3) ",
+                "AND (d.code LIKE $4) AND (d.sex IN ($5,$6)) AND ((d.metadata->$7->>'value')::text IN ($8,$9)));"
             ].join("");
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
