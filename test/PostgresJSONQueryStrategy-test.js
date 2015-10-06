@@ -197,7 +197,7 @@ describe("QueryStrategy.PostgresJSON", function() {
     });
 
     describe("#composeSpecializedQuery", function() {
-        it("composes a query from a criteria object containing specialized fields on subject", function() {
+        it("composes a query from a criteria object containing specialized fields on subject (code)", function() {
             var subjProperties = subjectParamsObj.content[1];
             var parameteredQuery = this.strategy.composeSpecializedQuery(subjProperties, {}, "d.");
             var subquery = "d.code LIKE $1";
@@ -205,6 +205,14 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(parameteredQuery.subquery).to.equal(subquery);
             // TODO add parameters check into the array
         });
+            
+        it("composes a query from a criteria object containing specialized fields on subject (sex)", function() {
+            var subjSex = subjectParamsObj.content[2];
+            var parameteredQuery = this.strategy.composeSpecializedQuery(subjSex, { parameters: [subjectParamsObj.pivotDataType]}, "d.");
+            var subquery = "d.sex IN ($2,$3)";
+            expect(parameteredQuery.parameters).to.eql(_.flatten([subjectParamsObj.pivotDataType, subjectParamsObj.content[2].sex]));
+        });
+
     });
 
     describe("#composeSingle", function() {
@@ -340,6 +348,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
+            console.log("Parameters for query with sex options: ");
             console.log(query.parameters);
             expect(query.parameters).to.have.length(13);
         });
