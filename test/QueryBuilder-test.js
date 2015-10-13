@@ -24,7 +24,7 @@ describe('#QueryBuilder', function() {
         });
 
         it('should call the compose method of the strategy object', function() {
-            var params = { pivotDataType: {id: 1, name:'Test'}};
+            var params = { dataType: {id: 1, name:'Test'}};
             this.builder.compose(params);
             expect(this.builder.strategy.compose.calledOnce);
         });

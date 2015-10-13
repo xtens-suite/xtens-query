@@ -8,7 +8,7 @@ var PostgresJSONAdvancedLoopQueryStrategy = require('../lib/PostgresJSONAdvanced
 describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
 
     var criteriaObj = {
-        pivotDataType: 1,
+        dataType: 1,
         content: [
             {
             fieldName: "constellation",
@@ -71,7 +71,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
     };
 
     var mixedParamsObj = {
-        "pivotDataType":5,
+        "dataType":5,
         "content":[{
             "fieldName":"Type",
             "fieldType":"text",
@@ -123,7 +123,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
     };
     
     var nestedParamsObj = {
-        "pivotDataType":1,
+        "dataType":1,
         "content":[{
             "fieldName":"Diagnosis Age",
             "fieldType":"integer",
@@ -138,7 +138,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
             "comparator":"IN",
             "fieldValue":"Diseased"
         },{
-            "pivotDataType":2,
+            "dataType":2,
             "content":[{
                 "fieldName":"Diagnosis",
                 "fieldType":"text",
@@ -146,7 +146,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
                 "comparator":"IN",
                 "fieldValue":"Neuroblastoma"
             },{
-                "pivotDataType":6,
+                "dataType":6,
                 "content":[{
                     "fieldName":"quantity",
                     "fieldType":"float",
@@ -155,7 +155,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
                     "fieldValue":"1.0",
                     "fieldUnit":"μl"
                 },{
-                    "pivotDataType":3,
+                    "dataType":3,
                     "content":[{
                         "fieldName":"Overall Result",
                         "fieldType":"text",
@@ -165,7 +165,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
                     }]
                 }]
             },{
-                "pivotDataType":7,
+                "dataType":7,
                 "content":[{
                     "fieldName":"quantity",
                     "fieldType":"float",
@@ -174,7 +174,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
                     "fieldValue":"1.2",
                     "fieldUnit":"µg"
                 },{
-                    "pivotDataType":8,
+                    "dataType":8,
                     "content":[{
                         "fieldName":"hypoxia signature",
                         "fieldType":"text",
@@ -252,7 +252,7 @@ describe("QueryStrategy.PostgresJSONAdvancedLoop", function() {
                 "(metadata->$6->'value'->>0)::float >= $7 AND " + "(metadata->$6->'unit'->>0)::text LIKE $8 AND " +
                 "(metadata->$9->'value'->>0)::integer > $10 AND " + "(metadata->$9->'unit'->>0)::text LIKE $11" +
                 ";";
-            var parameters = [ criteriaObj.pivotDataType, 
+            var parameters = [ criteriaObj.dataType, 
                 criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue,
                 criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue, 
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, criteriaObj.content[2].fieldUnit,

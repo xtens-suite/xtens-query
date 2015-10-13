@@ -7,7 +7,7 @@ var _ = require('lodash');
 var PostgresJSONBQueryStrategy = require('../lib/PostgresJSONBQueryStrategy.js');
 
 var criteriaObj = {
-    "pivotDataType": 1,
+    "dataType": 1,
     "model": "Data",
     "content": [
         {
@@ -42,7 +42,7 @@ var criteriaObj = {
 };
 
 var booleanCriteriaObj = {
-    "pivotDataType": 1,
+    "dataType": 1,
     "model": "Data",
     "content": [
         {
@@ -62,7 +62,7 @@ var booleanCriteriaObj = {
 };
 
 var booleanStringCriteriaObj = {
-    "pivotDataType": 1,
+    "dataType": 1,
     "model": "Data",
     "content": [
         {
@@ -82,7 +82,7 @@ var booleanStringCriteriaObj = {
 };
 
 var loopCriteriaObj = {
-    "pivotDataType": 7,
+    "dataType": 7,
     "content": [
         {
         "comparator": "=",
@@ -95,7 +95,7 @@ var loopCriteriaObj = {
 };
 
 var loopListCriteriaObj = {
-    "pivotDataType": 7,
+    "dataType": 7,
     "content": [
         {
         "comparator": "?&",
@@ -108,10 +108,10 @@ var loopListCriteriaObj = {
     ]
 };
 
-var sampleParamsObj = {"pivotDataType":4,"model":"Sample","wantsSubject":true,"wantsPersonalInfo":true,"content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"pivotDataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"pivotDataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"pivotDataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
+var sampleParamsObj = {"dataType":4,"model":"Sample","wantsSubject":true,"wantsPersonalInfo":true,"content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"dataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"dataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"dataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
 
 var emptySampleObj = {
-    "pivotDataType": 2,
+    "dataType": 2,
     "model": "Sample",
     "content": [
         {"specializedQuery": "Sample"},
@@ -203,7 +203,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
                 "(d.metadata @> $2) AND (d.metadata @> $3 OR d.metadata @> $4 OR d.metadata @> $5) AND " +
                 "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
                 "((d.metadata->$9->>'value')::integer > $10 AND " + "d.metadata @> $11))";
-            var parameters = [ criteriaObj.pivotDataType,
+            var parameters = [ criteriaObj.dataType,
                 '{\"constellation\":{\"value\":\"cepheus\"}}', '{\"type\":{\"value\":\"hypergiant\"}}',
                 '{\"type\":{\"value\":\"supergiant\"}}', '{\"type\":{\"value\":\"main-sequence star\"}}',
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, '{\"mass\":{\"unit\":\"M☉\"}}',
@@ -228,7 +228,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
                 "(NOT d.metadata @> $2) AND (NOT d.metadata @> $3 OR NOT d.metadata @> $4 OR NOT d.metadata @> $5) AND " +
                 "((d.metadata->$6->>'value')::float >= $7 AND " + "d.metadata @> $8) AND " +
                 "((d.metadata->$9->>'value')::integer > $10 AND " + "d.metadata @> $11))";
-            var parameters = [ criteriaObj.pivotDataType,
+            var parameters = [ criteriaObj.dataType,
                 '{\"constellation\":{\"value\":\"cepheus\"}}', '{\"type\":{\"value\":\"hypergiant\"}}',
                 '{\"type\":{\"value\":\"supergiant\"}}', '{\"type\":{\"value\":\"main-sequence star\"}}',
                 criteriaObj.content[2].fieldName, criteriaObj.content[2].fieldValue, '{\"mass\":{\"unit\":\"M☉\"}}',
@@ -248,7 +248,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
             var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
-            var parameters = [booleanStringCriteriaObj.pivotDataType,
+            var parameters = [booleanStringCriteriaObj.dataType,
                 '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
                 var parameteredQuery = this.strategy.composeSingle(booleanStringCriteriaObj);
                 expect(parameteredQuery).to.have.property('select');
@@ -264,7 +264,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
             var whereClause = "WHERE d.type = $1 AND ((d.metadata @> $2) AND (d.metadata @> $3))";
-            var parameters = [booleanCriteriaObj.pivotDataType,
+            var parameters = [booleanCriteriaObj.dataType,
                 '{\"is_neutron_star\":{\"value\":true}}', '{\"is_black_hole\":{\"value\":false}}'];
                 var parameteredQuery = this.strategy.composeSingle(booleanCriteriaObj);
                 expect(parameteredQuery).to.have.property('select');
@@ -280,7 +280,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
 
             var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
             var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->'values' " + loopListCriteriaObj.content[0].comparator + " $3)))";
-            var parameters = [loopListCriteriaObj.pivotDataType, loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue];
+            var parameters = [loopListCriteriaObj.dataType, loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue];
             var parameteredQuery = this.strategy.composeSingle(loopListCriteriaObj);
             expect(parameteredQuery).to.have.property('select');
             expect(parameteredQuery).to.have.property('where');
@@ -326,7 +326,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var query = this.strategy.compose(emptySampleObj);
             var expectedStatement = "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d WHERE d.type = $1;";
             expect(query.statement).to.equal(expectedStatement);
-            expect(query.parameters).to.eql([emptySampleObj.pivotDataType]);
+            expect(query.parameters).to.eql([emptySampleObj.dataType]);
         });
 
     });

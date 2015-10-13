@@ -19,7 +19,7 @@ describe("QueryStrategy.PostgresJSON", function() {
     };
 
     var criteriaObj = {
-        "pivotDataType": 1,
+        "dataType": 1,
         "model": "Data",
         "content": [
             {
@@ -54,7 +54,7 @@ describe("QueryStrategy.PostgresJSON", function() {
     };
 
     var nestedParamsObj = {
-        "pivotDataType":1,
+        "dataType":1,
         "model": "Subject",
         "content":[{
             "fieldName":"Diagnosis Age",
@@ -70,7 +70,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             "comparator":"IN",
             "fieldValue":["Diseased"]
         },{
-            "pivotDataType":2,
+            "dataType":2,
             "model":"Sample",
             "content":[{
                 "fieldName":"Diagnosis",
@@ -79,7 +79,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "comparator":"IN",
                 "fieldValue":["Neuroblastoma"]
             },{
-                "pivotDataType":6,
+                "dataType":6,
                 "model":"Sample",
                 "content":[{
                     "fieldName":"quantity",
@@ -89,7 +89,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                     "fieldValue":"1.0",
                     "fieldUnit":"μl"
                 },{
-                    "pivotDataType":3,
+                    "dataType":3,
                     "model":"Data",
                     "content":[{
                         "fieldName":"Overall Result",
@@ -100,7 +100,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                     }]
                 }]
             },{
-                "pivotDataType":7,
+                "dataType":7,
                 "model":"Sample",
                 "content":[{
                     "fieldName":"quantity",
@@ -110,7 +110,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                     "fieldValue":"1.2",
                     "fieldUnit":"µg"
                 },{
-                    "pivotDataType":8,
+                    "dataType":8,
                     "model":"Data",
                     "content":[{
                         "fieldName":"hypoxia signature",
@@ -125,7 +125,7 @@ describe("QueryStrategy.PostgresJSON", function() {
     };
 
     var subjectParamsObj = {
-        "pivotDataType":1,
+        "dataType":1,
         "model":"Subject",
         "content": [
             {
@@ -150,7 +150,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             "comparator":"IN",
             "fieldValue":["Diseased","Deceased"]
         },{
-            "pivotDataType":2,
+            "dataType":2,
             "model":"Sample",
             "content":[
                 {
@@ -208,9 +208,9 @@ describe("QueryStrategy.PostgresJSON", function() {
             
         it("composes a query from a criteria object containing specialized fields on subject (sex)", function() {
             var subjSex = subjectParamsObj.content[2];
-            var parameteredQuery = this.strategy.composeSpecializedQuery(subjSex, { parameters: [subjectParamsObj.pivotDataType]}, "d.");
+            var parameteredQuery = this.strategy.composeSpecializedQuery(subjSex, { parameters: [subjectParamsObj.dataType]}, "d.");
             var subquery = "d.sex IN ($2,$3)";
-            expect(parameteredQuery.parameters).to.eql(_.flatten([subjectParamsObj.pivotDataType, subjectParamsObj.content[2].sex]));
+            expect(parameteredQuery.parameters).to.eql(_.flatten([subjectParamsObj.dataType, subjectParamsObj.content[2].sex]));
         });
 
     });
@@ -225,7 +225,7 @@ describe("QueryStrategy.PostgresJSON", function() {
                 "((d.metadata->$4->>'value')::text IN ($5,$6,$7)) AND " +
                 "((d.metadata->$8->>'value')::float >= $9 AND " + "(d.metadata->$8->>'unit')::text LIKE $10) AND " +
                 "((d.metadata->$11->>'value')::integer > $12 AND " + "(d.metadata->$11->>'unit')::text LIKE $13))";
-            var parameters = [ criteriaObj.pivotDataType, 
+            var parameters = [ criteriaObj.dataType, 
                 criteriaObj.content[0].fieldName, criteriaObj.content[0].fieldValue,
                 criteriaObj.content[1].fieldName, criteriaObj.content[1].fieldValue[0], 
                 criteriaObj.content[1].fieldValue[1], criteriaObj.content[1].fieldValue[2], 
@@ -267,20 +267,20 @@ describe("QueryStrategy.PostgresJSON", function() {
             var selectStatement = "SELECT id, code, sex FROM subject d"; 
             var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->>'value')::integer <= $3 "; 
             whereClause += "AND (d.metadata->$2->>'unit')::text LIKE $4) AND ((d.metadata->$5->>'value')::text IN ($6)))";
-            var parameters = [ nestedParamsObj.pivotDataType,
+            var parameters = [ nestedParamsObj.dataType,
                 nestedParamsObj.content[0].fieldName, nestedParamsObj.content[0].fieldValue, nestedParamsObj.content[0].fieldUnit, // Subject
                 nestedParamsObj.content[1].fieldName, nestedParamsObj.content[1].fieldValue[0],
-                nestedParamsObj.content[2].pivotDataType, nestedParamsObj.content[2].content[0].fieldName, //Tissue
+                nestedParamsObj.content[2].dataType, nestedParamsObj.content[2].content[0].fieldName, //Tissue
                 nestedParamsObj.content[2].content[0].fieldValue[0], 
-                nestedParamsObj.content[2].content[1].pivotDataType, nestedParamsObj.content[2].content[1].content[0].fieldName, // DNA Sample
+                nestedParamsObj.content[2].content[1].dataType, nestedParamsObj.content[2].content[1].content[0].fieldName, // DNA Sample
                 nestedParamsObj.content[2].content[1].content[0].fieldValue, nestedParamsObj.content[2].content[1].content[0].fieldUnit,
-                nestedParamsObj.content[2].content[1].content[1].pivotDataType, // CGH
+                nestedParamsObj.content[2].content[1].content[1].dataType, // CGH
                 nestedParamsObj.content[2].content[1].content[1].content[0].fieldName,
                 nestedParamsObj.content[2].content[1].content[1].content[0].fieldValue[0], 
                 nestedParamsObj.content[2].content[1].content[1].content[0].fieldValue[1],
-                nestedParamsObj.content[2].content[2].pivotDataType, nestedParamsObj.content[2].content[2].content[0].fieldName, // RNA Sample
+                nestedParamsObj.content[2].content[2].dataType, nestedParamsObj.content[2].content[2].content[0].fieldName, // RNA Sample
                 nestedParamsObj.content[2].content[2].content[0].fieldValue, nestedParamsObj.content[2].content[2].content[0].fieldUnit,
-                nestedParamsObj.content[2].content[2].content[1].pivotDataType, // Microarray
+                nestedParamsObj.content[2].content[2].content[1].dataType, // Microarray
                 nestedParamsObj.content[2].content[2].content[1].content[0].fieldName,
                 nestedParamsObj.content[2].content[2].content[1].content[0].fieldValue[0] 
             ];
