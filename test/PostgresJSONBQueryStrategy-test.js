@@ -2,6 +2,7 @@
  * @author Massimiliano Izzo
  * @description unit tests
  */
+/* jshint esnext: true */
 var expect = require('chai').expect;
 var _ = require('lodash');
 var PostgresJSONBQueryStrategy = require('../lib/PostgresJSONBQueryStrategy.js');
@@ -101,7 +102,7 @@ var loopCriteriaObj = {
         "comparator": "=",
         "fieldName": "gene_name",
         "fieldType": "text",
-        "fieldValue": "MYCN",
+        "fieldValue": "Corf44",
         "isInLoop": true
     }
     ]
@@ -114,7 +115,7 @@ var loopListCriteriaObj = {
         "comparator": "?&",
         "fieldName": "gene_name",
         "fieldType": "text",
-        "fieldValue": ["MYCN","ALK","CD44","SOX4"],
+        "fieldValue": ["MYCN","ALK","CD44","SOX4", "Corf44"],
         "isList": true,
         "isInLoop": true
     }
@@ -185,6 +186,17 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
         });
 
+        it("should return a clause with the element exists [?] jsonb operator with case insensitive values", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var caseInsensitiveLoopRow = _.extend(_.clone(loopCriteriaObj.content[0]), {caseInsensitive: true});
+            var res = this.strategy.getSubqueryRowLoop(caseInsensitiveLoopRow, previousOutput, 'd.');
+            expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue.toUpperCase()]);
+        });
+
+
         it("should return a clause with the element exists [?] jsonb operator with NOT condition", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
@@ -195,7 +207,7 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
         });
 
-        it("should return a clause with the element exists [?] jsonb operator", function() {
+        it("should return a clause with the element exists all [?&] jsonb operator", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
             var res = this.strategy.getSubqueryRowLoop(loopListCriteriaObj.content[0], previousOutput, 'd.');
@@ -204,7 +216,18 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue]);
         });
 
-        it("should return a clause with the element exists [?] jsonb operator", function() {
+        it("should return a clause with the element exists all [?&] jsonb operator (case insensitive)", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var caseInsensitiveLoopListRow = _.extend(_.cloneDeep(loopListCriteriaObj.content[0]), {caseInsensitive: true});
+            var values = _.map(loopListCriteriaObj.content[0].fieldValue, el => el.toUpperCase());
+            var res = this.strategy.getSubqueryRowLoop(caseInsensitiveLoopListRow, previousOutput, 'd.');
+            expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ?& $"+(++i)+")");
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, values]);
+        });
+
+        it("should return a clause with the element exists any [?|] jsonb operator", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
             loopListCriteriaObj.content[0].comparator = '?|';
@@ -213,6 +236,8 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue]);
         });
+        
+        
 
     });
 
@@ -312,6 +337,24 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
 
         });
+        
+        /*
+        it("compose a query with a loop array condition", function() {
+
+            var selectStatement = "SELECT id, parent_subject, parent_sample, parent_data FROM data d";
+            var whereClause = "WHERE d.type = $1 AND (((d.metadata->$2->'values' " + loopListCriteriaObj.content[0].comparator + " $3)))";
+            var parameters = [loopListCriteriaObj.dataType, loopListCriteriaObj.content[0].fieldName, 
+                _.map(loopListCriteriaObj.content[0].fieldValue, elem => elem.toUpperCase())];
+            loopCriteriaObj.content[0].caseInsensitive = true;
+            var parameteredQuery = this.strategy.composeSingle(loopListCriteriaObj);
+            expect(parameteredQuery).to.have.property('select');
+            expect(parameteredQuery).to.have.property('where');
+            expect(parameteredQuery).to.have.property('previousOutput');
+            expect(parameteredQuery.select).to.equal(selectStatement);
+            expect(parameteredQuery.where).to.equal(whereClause);
+            expect(parameteredQuery.previousOutput.parameters).to.eql(parameters);
+
+        }); */
 
     });
 
