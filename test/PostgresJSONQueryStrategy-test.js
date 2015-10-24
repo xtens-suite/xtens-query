@@ -186,7 +186,7 @@ describe("QueryStrategy.PostgresJSON", function() {
             var parameteredQuery = this.strategy.composeSpecializedPersonalDetailsQuery(pdProperties);
             var selectStatement = "SELECT id, given_name, surname, birth_date FROM personal_details";
             var subquery = "pd.surname "+pdProperties.surnameComparator+" $1 AND pd.given_name "+pdProperties.givenNameComparator+" $2";
-            var parameters = [pdProperties.surname, pdProperties.givenName];
+            var parameters = [pdProperties.surname.toUpperCase(), pdProperties.givenName.toUpperCase()];
             expect(parameteredQuery).to.have.property('select');
             expect(parameteredQuery).to.have.property('where');
             expect(parameteredQuery).to.have.property('previousOutput');
@@ -351,6 +351,9 @@ describe("QueryStrategy.PostgresJSON", function() {
             console.log("Parameters for query with sex options: ");
             console.log(query.parameters);
             expect(query.parameters).to.have.length(13);
+            // name and surname searches should be set to uppercase
+            expect(query.parameters[1]).to.equal(subjectParamsObj.content[0].surname.toUpperCase());
+            expect(query.parameters[2]).to.equal(subjectParamsObj.content[0].givenName.toUpperCase());
         });
 
         it("composes a query from a nested subject criteria object (containing specialized fields only)", function() {

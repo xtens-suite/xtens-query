@@ -41,6 +41,19 @@ var criteriaObj = {
     ]
 };
 
+var caseInsensitiveCriteriaObj = {
+    "dataType": 1,
+    "model": "Data",
+    "content": [{
+        "comparator": "=",
+        "fieldName": "name",
+        "fieldType": "text",
+        "fieldValue": "Aldebaran",
+        "isList": false,
+        "caseInsensitive": true
+    }]
+};
+
 var booleanCriteriaObj = {
     "dataType": 1,
     "model": "Data",
@@ -148,6 +161,15 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.subquery).to.equal("d.metadata @> $"+ (i+1));
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql(['{\"constellation\":{\"value\":\"cepheus\"}}']);
+        });
+
+        it("should return a containment (@>) clause with uppercase metadata value (case insensitive search)", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var res = this.strategy.getSubqueryRowAttribute(caseInsensitiveCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata @> $"+ (i+1));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"name\":{\"value\":\"ALDEBARAN\"}}']);
         });
 
     });
