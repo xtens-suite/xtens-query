@@ -122,7 +122,7 @@ var loopListCriteriaObj = {
     ]
 };
 
-var sampleParamsObj = {"dataType":4,"model":"Sample","wantsSubject":true,"wantsPersonalInfo":true,"content":[{"specializedQuery":"Sample"},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"dataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"dataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"dataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
+var sampleParamsObj = {"dataType":4,"model":"Sample","wantsSubject":true,"wantsPersonalInfo":true,"content":[{"specializedQuery":"Sample","biobank":1, "biobankComparator":"="},{"fieldName":"quantity","fieldType":"float","isList":false,"comparator":">=","fieldValue":"1.0","fieldUnit":"μg"},{"dataType":6,"model":"Data","content":[{"fieldName":"platform","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["Agilent"]},{"fieldName":"array","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["4x180K"]},{"dataType":7,"model":"Data","content":[{"fieldName":"genome","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["hg19"]},{"dataType":8,"model":"Data","content":[{"fieldName":"chr","fieldType":"text","isList":true,"comparator":"IN","fieldValue":["chr11","chr17"]},{"fieldName":"is_amplification","fieldType":"boolean","isList":false,"comparator":"=","fieldValue":"true"}]}]}]}]};
 
 var emptySampleObj = {
     "dataType": 2,
@@ -365,31 +365,36 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var commonTableExpr = [
                 "WITH s AS (SELECT id, code, sex, personal_info FROM subject), ",
                 "pd AS (SELECT id, given_name, surname, birth_date FROM personal_details), ",
+                "bb AS (SELECT id, biobank_id, acronym, name FROM biobank), ",
                 "nested_1 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
-                "WHERE type = $5 AND ((metadata @> $6) AND (metadata @> $7))), ",
-                "nested_2 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data WHERE type = $8 AND ((metadata @> $9))), ",
+                "WHERE type = $6 AND ((metadata @> $7) AND (metadata @> $8))), ",
+                "nested_2 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data WHERE type = $9 AND ((metadata @> $10))), ",
                 "nested_3 AS (SELECT id, parent_subject, parent_sample, parent_data FROM data ",
-                "WHERE type = $10 AND ((metadata @> $11 OR metadata @> $12) AND (metadata @> $13)))"
+                "WHERE type = $11 AND ((metadata @> $12 OR metadata @> $13) AND (metadata @> $14)))"
             ].join("");
             var mainQuery = [
-                "SELECT DISTINCT d.id, d.biobank_code, s.code, s.sex, pd.given_name, pd.surname, pd.birth_date, d.metadata FROM sample d ",
+                "SELECT DISTINCT d.id, d.biobank, d.biobank_code, s.code, s.sex, pd.given_name, pd.surname, pd.birth_date, bb.acronym AS biobank_acronym, d.metadata FROM sample d ",
                 "LEFT JOIN s ON s.id = d.parent_subject ",
                 "LEFT JOIN pd ON pd.id = s.personal_info ",
+                "LEFT JOIN bb ON bb.id = d.biobank ",
                 "INNER JOIN nested_1 ON nested_1.parent_sample = d.id ",
                 "INNER JOIN nested_2 ON nested_2.parent_data = nested_1.id ",
                 "INNER JOIN nested_3 ON nested_3.parent_data = nested_2.id ",
-                "WHERE d.type = $1 AND (((d.metadata->$2->>'value')::float >= $3 AND d.metadata @> $4));"
+                "WHERE d.type = $1 AND ((d.biobank = $2) AND ((d.metadata->$3->>'value')::float >= $4 AND d.metadata @> $5));"
             ].join("");
             expect(query).to.have.property('statement');
             expect(query).to.have.property('parameters');
             expect(query.statement).to.equal(commonTableExpr + " " + mainQuery);
             console.log(query.parameters);
-            expect(query.parameters).to.have.length(13);
+            expect(query.parameters).to.have.length(14);
         });
 
         it("composes a query from an empty sample criteria (containing an empty specialized criteria)", function() {
             var query = this.strategy.compose(emptySampleObj);
-            var expectedStatement = "SELECT DISTINCT d.id, d.biobank_code, d.metadata FROM sample d WHERE d.type = $1;";
+            var expectedStatement = ["WITH bb AS (SELECT id, biobank_id, acronym, name FROM biobank) ",
+                "SELECT DISTINCT d.id, d.biobank, d.biobank_code, bb.acronym AS biobank_acronym, d.metadata FROM sample d ",
+                "LEFT JOIN bb ON bb.id = d.biobank ", 
+                "WHERE d.type = $1;"].join("");
             expect(query.statement).to.equal(expectedStatement);
             expect(query.parameters).to.eql([emptySampleObj.dataType]);
         });
