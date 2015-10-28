@@ -55,6 +55,25 @@ var caseInsensitiveCriteriaObj = {
     }]
 };
 
+var numericCriteriaObj = {
+    "dataType": 1,
+    "model": "Data",
+    "content": [{
+        "comparator": "=",
+        "fieldName": "distance",
+        "fieldType": "float",
+        "fieldValue": "8.25",
+        "fieldUnit": "pc"
+    }, {
+        "comparator": "=",
+        "fieldName": "temperature",
+        "fieldType": "integer",
+        "fieldValue": "7500",
+        "fieldUnit": "K"
+    }
+    ]
+};
+
 var booleanCriteriaObj = {
     "dataType": 1,
     "model": "Data",
@@ -173,6 +192,24 @@ describe("QueryStrategy.PostgresJSONB", function() {
             expect(res.previousOutput.parameters).to.eql(['{\"name\":{\"value\":\"ALDEBARAN\"}}']);
         });
 
+        it("should return a containment (@>) clause with integer metadata value", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var res = this.strategy.getSubqueryRowAttribute(numericCriteriaObj.content[1], previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata @> $" + (++i) + " AND d.metadata @> $" + (++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"temperature\":{\"value\":7500}}', '{\"temperature\":{\"unit\":\"K\"}}']);
+        });
+        
+        it("should return a containment (@>) clause with floating point metadata value", function() {
+            var i = 1;
+            var previousOutput = {lastPosition: i, parameters: []};
+            var res = this.strategy.getSubqueryRowAttribute(numericCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata @> $" + (++i) + " AND d.metadata @> $" + (++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"distance\":{\"value\":8.25}}', '{\"distance\":{\"unit\":\"pc\"}}']);
+        });
+
     });
 
     describe("#getSubqueryRowLoop", function() {
@@ -181,9 +218,14 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
             var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
+            /*
             expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
+            */
+           expect(res.subquery).to.equal("d.metadata @> $" + (++i));
+           expect(res.previousOutput).to.have.property("parameters");
+           expect(res.previousOutput.parameters).to.eql(['{\"gene_name\":{\"values\":[\"Corf44\"]}}']);
         });
 
         it("should return a clause with the element exists [?] jsonb operator with case insensitive values", function() {
@@ -191,9 +233,14 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var previousOutput = {lastPosition: i, parameters: []};
             var caseInsensitiveLoopRow = _.extend(_.clone(loopCriteriaObj.content[0]), {caseInsensitive: true});
             var res = this.strategy.getSubqueryRowLoop(caseInsensitiveLoopRow, previousOutput, 'd.');
+            /*
             expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue.toUpperCase()]);
+            */
+            expect(res.subquery).to.equal("d.metadata @> $" + (++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"gene_name\":{\"values\":[\"CORF44\"]}}']);
         });
 
 
@@ -202,18 +249,28 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var previousOutput = {lastPosition: i, parameters: []};
             loopCriteriaObj.content[0].comparator = '<>';
             var res = this.strategy.getSubqueryRowLoop(loopCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("NOT d.metadata @> $" + (++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"gene_name\":{\"values\":[\"Corf44\"]}}']);
+            /*
             expect(res.subquery).to.equal("(NOT d.metadata->$"+(++i)+"->'values' ? $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql([loopCriteriaObj.content[0].fieldName, loopCriteriaObj.content[0].fieldValue]);
+           */
         });
 
         it("should return a clause with the element exists all [?&] jsonb operator", function() {
             var i = 1;
             var previousOutput = {lastPosition: i, parameters: []};
             var res = this.strategy.getSubqueryRowLoop(loopListCriteriaObj.content[0], previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata @> $" + (++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"gene_name\":{\"values\":[\"MYCN\",\"ALK\",\"CD44\",\"SOX4\",\"Corf44\"]}}']);
+            /*
             expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ?& $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
             expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, loopListCriteriaObj.content[0].fieldValue]);
+            */
         });
 
         it("should return a clause with the element exists all [?&] jsonb operator (case insensitive)", function() {
@@ -222,9 +279,13 @@ describe("QueryStrategy.PostgresJSONB", function() {
             var caseInsensitiveLoopListRow = _.extend(_.cloneDeep(loopListCriteriaObj.content[0]), {caseInsensitive: true});
             var values = _.map(loopListCriteriaObj.content[0].fieldValue, el => el.toUpperCase());
             var res = this.strategy.getSubqueryRowLoop(caseInsensitiveLoopListRow, previousOutput, 'd.');
+            expect(res.subquery).to.equal("d.metadata @> $" + (++i));
+            expect(res.previousOutput).to.have.property("parameters");
+            expect(res.previousOutput.parameters).to.eql(['{\"gene_name\":{\"values\":[\"MYCN\",\"ALK\",\"CD44\",\"SOX4\",\"CORF44\"]}}']);
+            /*
             expect(res.subquery).to.equal("(d.metadata->$"+(++i)+"->'values' ?& $"+(++i)+")");
             expect(res.previousOutput).to.have.property("parameters");
-            expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, values]);
+            expect(res.previousOutput.parameters).to.eql([loopListCriteriaObj.content[0].fieldName, values]); */
         });
 
         it("should return a clause with the element exists any [?|] jsonb operator", function() {
