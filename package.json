@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/biolab-unige/xtens-query.git"
+    "url": "https://github.com/xtens-suite/xtens-query.git"
   },
   "keywords": [
     "xtens",
@@ -17,9 +17,9 @@
   "author": "Massimiliano Izzo",
   "license": "BSD",
   "bugs": {
-    "url": "https://github.com/biolab-unige/xtens-query/issues"
+    "url": "https://github.com/xtens-suite/xtens-query/issues"
   },
-  "homepage": "https://github.com/biolab-unige/xtens-query",
+  "homepage": "https://github.com/xtens-suite/xtens-query",
   "devDependencies": {
     "chai": "^1.9.2",
     "mocha": "^2.0.1",
